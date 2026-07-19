@@ -1,0 +1,79 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.xugudb.shardingsphere.sql.parser.engine.xugu.visitor.statement.type;
+
+import org.apache.shardingsphere.database.connector.core.type.DatabaseType;
+import org.apache.shardingsphere.sql.parser.api.ASTNode;
+import org.apache.shardingsphere.sql.parser.api.visitor.statement.type.TCLStatementVisitor;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CommitContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.LockContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.RollbackContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.SavepointContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.SetConstraintsContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.SetTransactionContext;
+import com.xugudb.shardingsphere.sql.parser.engine.xugu.visitor.statement.XuguStatementVisitor;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.type.lcl.LockStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.type.tcl.CommitStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.type.tcl.RollbackStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.type.tcl.SavepointStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.type.tcl.SetConstraintsStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.type.tcl.SetTransactionStatement;
+import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
+
+import java.util.Collections;
+
+/**
+ * TCL statement visitor for Xugu.
+ */
+public final class XuguTCLStatementVisitor extends XuguStatementVisitor implements TCLStatementVisitor {
+    
+    public XuguTCLStatementVisitor(final DatabaseType databaseType) {
+        super(databaseType);
+    }
+    
+    @Override
+    public ASTNode visitSetTransaction(final SetTransactionContext ctx) {
+        return new SetTransactionStatement(getDatabaseType());
+    }
+    
+    @Override
+    public ASTNode visitCommit(final CommitContext ctx) {
+        return new CommitStatement(getDatabaseType());
+    }
+    
+    @Override
+    public ASTNode visitRollback(final RollbackContext ctx) {
+        return null == ctx.savepointClause().savepointName() ? new RollbackStatement(getDatabaseType())
+                : new RollbackStatement(getDatabaseType(), ((IdentifierValue) visit(ctx.savepointClause().savepointName())).getValue());
+    }
+    
+    @Override
+    public ASTNode visitSavepoint(final SavepointContext ctx) {
+        return new SavepointStatement(getDatabaseType(), ((IdentifierValue) visit(ctx.savepointName())).getValue());
+    }
+    
+    @Override
+    public ASTNode visitSetConstraints(final SetConstraintsContext ctx) {
+        return new SetConstraintsStatement(getDatabaseType());
+    }
+    
+    @Override
+    public ASTNode visitLock(final LockContext ctx) {
+        return new LockStatement(getDatabaseType(), Collections.emptyList());
+    }
+}

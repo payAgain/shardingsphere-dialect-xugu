@@ -10,6 +10,8 @@
     <name>shardingsphere-dialect-xugu-parent</name>
     <modules>
         <module>connector-xugu</module>
+        <module>parser-sql-statement-xugu</module>
+        <module>parser-sql-engine-xugu</module>
         <module>jdbc-dialect-xugu</module>
         <module>tests-it</module>
     </modules>
@@ -19,6 +21,7 @@
         <xugu.jdbc.version>12.3.6</xugu.jdbc.version>
         <junit.version>5.10.2</junit.version>
         <mockito.version>4.11.0</mockito.version>
+        <lombok.version>1.18.32</lombok.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <dependencyManagement>
@@ -34,9 +37,24 @@
                 <version>${shardingsphere.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.shardingsphere</groupId>
+                <artifactId>shardingsphere-parser-sql-statement-core</artifactId>
+                <version>${shardingsphere.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.shardingsphere</groupId>
+                <artifactId>shardingsphere-parser-sql-engine-core</artifactId>
+                <version>${shardingsphere.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.xugudb</groupId>
                 <artifactId>xugu-jdbc</artifactId>
                 <version>${xugu.jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
@@ -68,6 +86,13 @@
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
                     </configuration>
                 </plugin>
                 <plugin>

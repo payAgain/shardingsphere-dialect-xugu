@@ -13,3 +13,19 @@ Validate the multi-module skeleton:
 ```powershell
 mvn -q validate
 ```
+
+## Verification
+
+Unit / module tests:
+
+```powershell
+mvn -q test
+```
+
+Live XuGu IT (host from `tests-it/src/test/resources/it-xugu.properties`; skips if unreachable):
+
+```powershell
+mvn -pl tests-it -am test -Dtest=NativeCrudIT -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+`NativeCrudIT` creates a ShardingSphere-JDBC DataSource (single DS, `compatiblemode=NONE`) and runs CREATE / INSERT / SELECT / UPDATE / DELETE / DROP through the XuGu native dialect SPI.

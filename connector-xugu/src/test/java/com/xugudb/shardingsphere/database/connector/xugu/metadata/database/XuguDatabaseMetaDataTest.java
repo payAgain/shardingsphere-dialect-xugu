@@ -53,7 +53,7 @@ class XuguDatabaseMetaDataTest {
     @Test
     void assertGetSchemaOption() {
         assertThat(dialectDatabaseMetaData.getSchemaOption(), isA(XuguSchemaOption.class));
-        assertThat(dialectDatabaseMetaData.getSchemaOption().getDefaultSchema(), is(Optional.of("SYSDBA")));
+        assertThat(dialectDatabaseMetaData.getSchemaOption().getDefaultSchema(), is(Optional.of("sysdba")));
     }
     
     @Test

@@ -1,0 +1,24 @@
+# Single datasource, no sharding rules — XuGu native dialect via classpath SPI
+databaseName: logic_db
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+
+rules:
+- !SINGLE
+  tables:
+    - "*.*"
+  defaultDataSource: ds_0
+
+props:
+  sql-show: true

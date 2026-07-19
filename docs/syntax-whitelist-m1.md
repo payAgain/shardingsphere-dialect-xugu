@@ -39,3 +39,11 @@ mvn -pl parser-sql-engine-xugu,jdbc-dialect-xugu -am test
 ```
 
 Unit coverage: `XuguParserTest` parses each whitelist SQL via `SQLParserEngine` + `SQLStatementVisitorEngine` with databaseType `XuGu`.
+
+### Live IT (compatiblemode=NONE)
+
+```powershell
+mvn -pl tests-it -am test -Dtest=NativeCrudIT -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+Result (2026-07-20): **PASS** — `NativeCrudIT` ran CREATE / INSERT / SELECT / UPDATE / DELETE / DROP end-to-end through ShardingSphere-JDBC single datasource against `jdbc:xugu://192.168.2.239:5138/SYSTEM?compatiblemode=NONE&charset=UTF8`. Host-unreachable runs skip via JUnit `Assumptions`.

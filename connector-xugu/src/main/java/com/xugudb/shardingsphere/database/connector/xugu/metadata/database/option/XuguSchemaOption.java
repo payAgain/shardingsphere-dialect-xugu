@@ -12,7 +12,8 @@ import java.util.Optional;
  */
 public final class XuguSchemaOption implements DialectSchemaOption {
     
-    private final DialectSchemaOption delegate = new DefaultSchemaOption(true, "SYSDBA");
+    // SS SchemaRefreshUtils lowercases schema keys; keep default lowercase to match metadata map lookups.
+    private final DialectSchemaOption delegate = new DefaultSchemaOption(true, "sysdba");
     
     @Override
     public boolean isSchemaAvailable() {

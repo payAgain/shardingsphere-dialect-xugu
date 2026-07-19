@@ -10,6 +10,7 @@
     <name>shardingsphere-dialect-xugu-parent</name>
     <modules>
         <module>connector-xugu</module>
+        <module>tests-it</module>
     </modules>
     <properties>
         <java.version>1.8</java.version>

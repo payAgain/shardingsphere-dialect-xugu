@@ -86,8 +86,8 @@ class XuguDatabaseMetaDataTest {
     @Test
     void assertGetPaginationOption() {
         DialectPaginationOption actualPaginationOption = dialectDatabaseMetaData.getPaginationOption();
-        assertTrue(actualPaginationOption.isContainsRowNumber());
-        assertThat(actualPaginationOption.getRowNumberColumnName(), is("ROWNUM"));
+        assertFalse(actualPaginationOption.isContainsRowNumber());
+        assertThat(actualPaginationOption.getRowNumberColumnName(), is(""));
         assertFalse(actualPaginationOption.isContainsTop());
     }
     

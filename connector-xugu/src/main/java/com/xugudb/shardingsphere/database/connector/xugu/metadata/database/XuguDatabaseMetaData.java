@@ -66,7 +66,8 @@ public final class XuguDatabaseMetaData implements DialectDatabaseMetaData {
     
     @Override
     public DialectPaginationOption getPaginationOption() {
-        return new DialectPaginationOption(true, "ROWNUM", false);
+        // Live probe (compatiblemode=NONE): LIMIT_OK=true, ROWNUM_OK=true → prefer LIMIT. See docs/pagination-decision.md
+        return new DialectPaginationOption(false, "", false);
     }
     
     @Override

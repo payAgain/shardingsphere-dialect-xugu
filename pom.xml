@@ -10,6 +10,7 @@
     <name>shardingsphere-dialect-xugu-parent</name>
     <modules>
         <module>connector-xugu</module>
+        <module>jdbc-dialect-xugu</module>
         <module>tests-it</module>
     </modules>
     <properties>

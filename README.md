@@ -22,10 +22,12 @@ Unit / module tests:
 mvn -q test
 ```
 
-Live XuGu IT (host from `tests-it/src/test/resources/it-xugu.properties`; skips if unreachable):
+Default `mvn test` runs unit tests only (Surefire excludes `**/*IT.java` and `**/it/**`). Live XuGu IT (host from `tests-it/src/test/resources/it-xugu.properties`; skips if unreachable):
 
 ```powershell
-mvn -pl tests-it -am test -Dtest=NativeCrudIT -Dsurefire.failIfNoSpecifiedTests=false
+mvn -pl tests-it -am test -Pit-xugu
+# or a single IT:
+mvn -pl tests-it -am test -Pit-xugu -Dtest=NativeCrudIT -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
 `NativeCrudIT` creates a ShardingSphere-JDBC DataSource (single DS, `compatiblemode=NONE`) and runs CREATE / INSERT / SELECT / UPDATE / DELETE / DROP through the XuGu native dialect SPI.

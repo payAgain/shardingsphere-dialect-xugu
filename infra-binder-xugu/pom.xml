@@ -8,9 +8,14 @@
         <artifactId>shardingsphere-dialect-xugu-parent</artifactId>
         <version>5.5.3-xugu-SNAPSHOT</version>
     </parent>
-    <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
-    <name>shardingsphere-jdbc-dialect-xugu</name>
+    <artifactId>shardingsphere-infra-binder-xugu</artifactId>
+    <name>shardingsphere-infra-binder-xugu</name>
     <dependencies>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-infra-binder-core</artifactId>
+            <version>${shardingsphere.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.xugudb.shardingsphere</groupId>
             <artifactId>shardingsphere-database-connector-xugu</artifactId>
@@ -20,15 +25,16 @@
             <groupId>com.xugudb.shardingsphere</groupId>
             <artifactId>shardingsphere-parser-sql-engine-xugu</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.xugudb.shardingsphere</groupId>
-            <artifactId>shardingsphere-infra-binder-xugu</artifactId>
-            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

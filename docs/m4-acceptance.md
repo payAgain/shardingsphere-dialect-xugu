@@ -1,64 +1,55 @@
-# M4 Acceptance Gate (G-002 — release `5.5.3-xugu.1` + quick-start)
+# M4 Acceptance Gate (G-002 — Release `5.5.3-xugu.1` + Quick Start)
 
 **Date:** 2026-07-20  
 **Repo:** `shardingsphere-dialect-xugu`  
-**Goal:** G-002 XuGu native dialect M4 (version cut, docs, local consumer smoke)  
-**Release version:** **`5.5.3-xugu.1`** (no SNAPSHOT)  
-**Status:** **user-ready local release; no remote push**
-
-## Version commits
-
-| Task | Commit message | SHA |
-|---|---|---|
-| M4-1 | `chore: release version 5.5.3-xugu.1` | `f169009` |
-| M4-2 | `docs: quick-start and README for 5.5.3-xugu.1` | `48d8a2b` |
-| M4-3 | `docs: M4 acceptance — user-ready release` | this commit |
+**Goal:** G-002 XuGu native dialect M4 (release coordinates + consumer quick-start)  
+**HEAD at verification:** `48d8a2b` (+ this acceptance doc commit)
 
 ## Verification commands
 
 ```powershell
-# Local install (all modules → ~/.m2)
+# Unit suite
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -q test
+
+# Local release install
 C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -q clean install
 
-# Dual-DS sharding smoke (PowerShell: quote -D args)
-C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd `
-  -pl tests-it -am test "-Pit-xugu" `
-  "-Dtest=ShardingCrudIT" `
-  "-Dsurefire.failIfNoSpecifiedTests=false"
+# Live dual-DS sharding smoke (NONE mode)
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it -am test "-Pit-xugu" "-Dtest=ShardingCrudIT" "-Dsurefire.failIfNoSpecifiedTests=false"
 ```
 
-## Evidence
+## M4 checklist
 
-| Check | Result | Notes |
+| Item | Evidence | Result |
 |---|---|---|
-| Parent + all module versions | **`5.5.3-xugu.1`** | 11 POMs; M4-1 `mvn -q clean test` BUILD SUCCESS |
-| `mvn -q clean install` | **PASS** | BUILD SUCCESS at M4-3 smoke (2026-07-20) |
-| `ShardingCrudIT` (`-Pit-xugu`) | **PASS** | Tests run: 1, Failures: 0, Errors: 0, Skipped: 0 · host `192.168.2.239:5138` · `compatiblemode=NONE` · dual DS `shard_ds0`/`shard_ds1` |
-| Quick-start + README | Present | [`docs/quick-start.md`](quick-start.md), root [`README.md`](../README.md), [`docs/examples/sharding-two-ds.yaml`](examples/sharding-two-ds.yaml) |
+| M4-1 Version `5.5.3-xugu.1` (non-SNAPSHOT) | Parent + all modules `pom.xml` version | PASS |
+| M4-2 Quick-start (~30 min) | `docs/quick-start.md` · README points here | PASS |
+| M4-3 Example YAML | `docs/examples/sharding-two-ds.yaml` | PASS |
+| M4-4 Local `mvn clean install` | Consumer can resolve `shardingsphere-jdbc-dialect-xugu:5.5.3-xugu.1` from `.m2` | PASS (reconfirmed at G-002 close) |
+| M4-5 Live sharding smoke | `ShardingCrudIT` re-run 2026-07-20 → Tests run: 1, Failures: 0 · BUILD SUCCESS | PASS |
+| M4-6 Unit suite green | `mvn -q test` → BUILD SUCCESS (UNIT_EXIT=0) | PASS |
 
-### ShardingCrudIT routing (observed)
+## Release coordinates
 
-- INSERT `user_id=1` → `ds_1`; `user_id=2` → `ds_0`
-- SELECT by id broadcast to both DS
-- `SELECT * FROM t_order LIMIT 5` → both DS with native `LIMIT`
-
-## Consumer coordinates (local `.m2`)
-
-```xml
-<dependency>
-  <groupId>com.xugudb.shardingsphere</groupId>
-  <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
-  <version>5.5.3-xugu.1</version>
-</dependency>
-<!-- plus org.apache.shardingsphere:shardingsphere-jdbc:5.5.3 and com.xugudb:xugu-jdbc:12.3.6 -->
-```
+| Artifact | Version |
+|---|---|
+| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | `5.5.3-xugu.1` |
+| Upstream `org.apache.shardingsphere:shardingsphere-jdbc` | `5.5.3` |
+| Driver `com.xugudb:xugu-jdbc` | `12.3.6` (local install) |
 
 ## Scope reminder
 
-- JDBC dialect only; **`compatiblemode=NONE` only**; no Proxy; no MySQL trunk
-- P2 DEFERs remain documented in [`parity-matrix.md`](parity-matrix.md)
-- **No `git push` / remote publish** performed for this gate — install is local-only
+- JDBC only · `compatiblemode=NONE` only · no MySQL trunk · no Proxy
+- Remote publish / push / PR = Human Ship gate (not part of M4 exit)
+
+## Prior gates
+
+| Gate | Doc | Status |
+|---|---|---|
+| M0–M1 | `docs/m0-m1-acceptance.md` | PASS |
+| M2 | `docs/m2-acceptance.md` | PASS |
+| M3 | `docs/m3-acceptance.md` + `docs/parity-matrix.md` | PASS |
 
 ## M4 exit
 
-Version cut + quick-start/README + local `mvn clean install` + live `ShardingCrudIT` PASS → M4 gate **PASS**. Local release is user-ready.
+Release version + quick-start + local install path + live `ShardingCrudIT` reconfirmed → M4 gate **PASS**. G-002 complete (stop before Ship).

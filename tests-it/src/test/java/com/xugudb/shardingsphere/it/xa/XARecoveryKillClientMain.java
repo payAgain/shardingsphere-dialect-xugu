@@ -17,13 +17,13 @@ import java.util.Properties;
 import java.util.UUID;
 
 /**
- * Client-side JVM kill target for P1-1 (optional script).
+ * Client-side JVM kill target for G-005 T2 / P1-1 (optional script).
  *
- * <p>Flow: create table → XA start → INSERT → print {@code READY_FOR_KILL} → sleep →
- * attempt end/prepare/commit. A companion script may {@code Stop-Process} this JVM after
- * the marker; post-check counts residual rows and optionally calls {@code recover()}.
+ * <p>Stronger path: create table → XA start → INSERT → end → <strong>prepare</strong> →
+ * print {@code READY_FOR_KILL} → sleep (script {@code Stop-Process}) → attempt commit.
+ * Post-kill probe prints residual rows and {@code recover()} Xids.
  *
- * <p>Usage (from repo root, after {@code mvn -pl tests-it -am test-compile -Pxa-recovery}):
+ * <p>Usage (from repo root, after {@code mvn -pl tests-it -am test-compile}):
  * see {@code scripts/xa-recovery-kill-client.ps1}.
  */
 public final class XARecoveryKillClientMain {
@@ -63,7 +63,7 @@ public final class XARecoveryKillClientMain {
         XAResource xaRes = xaConn.getXAResource();
         Connection conn = xaConn.getConnection();
         Xid xid = new XAXid(
-                ("kill-client-" + UUID.randomUUID()).getBytes(StandardCharsets.UTF_8),
+                ("kill-after-prep-" + UUID.randomUUID()).getBytes(StandardCharsets.UTF_8),
                 "b0".getBytes(StandardCharsets.UTF_8),
                 1);
         try {
@@ -72,16 +72,18 @@ public final class XARecoveryKillClientMain {
                     "INSERT INTO " + TABLE + " (ID, USER_ID, STATUS) VALUES (?, ?, ?)")) {
                 ps.setInt(1, 9001);
                 ps.setInt(2, 1);
-                ps.setString(3, "KILL-CLIENT");
+                ps.setString(3, "KILL-AFTER-PREPARE");
                 if (ps.executeUpdate() != 1) {
                     throw new IllegalStateException("insert failed");
                 }
             }
-            System.out.println("READY_FOR_KILL xid=" + xid + " holdMs=" + holdMs);
-            System.out.flush();
-            Thread.sleep(holdMs);
             xaRes.end(xid, XAResource.TMSUCCESS);
             int vote = xaRes.prepare(xid);
+            // Kill window opens AFTER prepare so recover()/row probe can observe prepared residue.
+            System.out.println("PREPARED vote=" + vote + " xid=" + xid);
+            System.out.println("READY_FOR_KILL phase=AFTER_PREPARE xid=" + xid + " holdMs=" + holdMs);
+            System.out.flush();
+            Thread.sleep(holdMs);
             xaRes.commit(xid, false);
             System.out.println("COMMITTED vote=" + vote);
         } finally {
@@ -98,7 +100,10 @@ public final class XARecoveryKillClientMain {
         }
     }
 
-    /** Post-kill probe: print COUNT(*) and recover() size. */
+    /**
+     * Post-kill probe: print COUNT(*), recover() Xid count, and a short disposition hint
+     * (clean / in-doubt / durable-row) for evidence docs.
+     */
     private static void probe() throws Exception {
         Properties props = loadProps();
         String baseUrl = props.getProperty("jdbc.url");
@@ -120,13 +125,17 @@ public final class XARecoveryKillClientMain {
         xaDs.setUser(user);
         xaDs.setPassword(password);
         int recoverCount = -1;
+        String recoverDetail = "n/a";
         XAConnection xaConn = null;
         try {
             xaConn = xaDs.getXAConnection();
             XAResource xaRes = xaConn.getXAResource();
             Xid[] start = xaRes.recover(XAResource.TMSTARTRSCAN);
             Xid[] end = xaRes.recover(XAResource.TMENDRSCAN);
-            recoverCount = (start == null ? 0 : start.length) + (end == null ? 0 : end.length);
+            int startLen = start == null ? 0 : start.length;
+            int endLen = end == null ? 0 : end.length;
+            recoverCount = startLen + endLen;
+            recoverDetail = "startScan=" + startLen + " endScan=" + endLen;
         } catch (Exception ex) {
             System.out.println("PROBE_RECOVER=UNAVAILABLE msg=" + ex.getMessage());
         } finally {
@@ -138,7 +147,18 @@ public final class XARecoveryKillClientMain {
                 }
             }
         }
-        System.out.println("PROBE_COUNT=" + count + " PROBE_RECOVER=" + recoverCount);
+        String disposition;
+        if (recoverCount > 0) {
+            disposition = "IN_DOUBT_VIA_RECOVER";
+        } else if (count > 0) {
+            disposition = "DURABLE_ROW_NO_RECOVER";
+        } else if (count == 0) {
+            disposition = "CLEAN_ROLLBACK_OR_ABORT";
+        } else {
+            disposition = "UNKNOWN";
+        }
+        System.out.println("PROBE_COUNT=" + count + " PROBE_RECOVER=" + recoverCount
+                + " detail=" + recoverDetail + " disposition=" + disposition);
     }
 
     private static Properties loadProps() throws Exception {

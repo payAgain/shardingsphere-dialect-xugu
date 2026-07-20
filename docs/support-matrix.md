@@ -36,7 +36,7 @@ Capabilities below are **in product scope** and have dialect SPI and/or baseline
 | **Sharding (DB / table)** | Supported | Dual-DS (or multi-node) sharding CRUD, joins on sharded order/item patterns | B1 · example YAML [`examples/sharding-two-ds.yaml`](examples/sharding-two-ds.yaml) |
 | **Readwrite-splitting (same-host)** | Supported *with topology caveat* | Logical `write_ds` + `read_ds_*` configuration | B2 today maps read URLs to the **same physical DB** (no replica). G-004 P0-2 aims at same-host **different DATABASE** routing asserts — **not** physical replica lag/isolation |
 | **Local TX + savepoint** | Supported | Commit / full rollback / `RELEASE SAVEPOINT` provider | B3 · `XuguSavepointReleaseSQLProvider` |
-| **XA wrapper** | Supported (happy-path) | `XuguXAConnectionWrapper` → `com.xugu.xa.XAConnectionImp`; metadata XA DS `com.xugu.xa.XADatasourceImp` | B7 commit/rollback across shards; may Assumption-skip if Atomikos/XuGu XA init fails. **XA crash recovery = G-004 P1-1 (not claimed here)** |
+| **XA wrapper** | Supported (happy-path) | `XuguXAConnectionWrapper` → `com.xugu.xa.XAConnectionImp`; metadata XA DS `com.xugu.xa.XADatasourceImp` | B7 commit/rollback across shards; may Assumption-skip if Atomikos/XuGu XA init fails. Prepare-then-kill evidence = **medium** ([xa-recovery-evidence.md](xa-recovery-evidence.md)); **strong** TM-log recovery **not** claimed. **XA timeout = DEFER** (app-level timeout) |
 | **Encrypt** | Supported | Column encrypt/decrypt via SS encrypt rule (no XuGu-specific encrypt SPI) | B6 AES phone column |
 | **Pagination** | Supported | Native **`LIMIT`** merge path | [pagination-decision.md](pagination-decision.md) · B5 |
 | **Batch DML** | Supported | JDBC batch insert across shards | B4 |
@@ -56,6 +56,7 @@ Do **not** enable, document as supported, or invent no-op SPIs for these items.
 | **`DialectDatabasePrivilegeChecker`** | DEFER | XuGu privilege model not mapped to SS checker API; inventing a no-op checker is forbidden ([parity-matrix.md](parity-matrix.md)) |
 | **`DialectShardingDALResultMerger` (SHOW DAL)** | DEFER | NONE mode has no MySQL-style SHOW DAL product surface |
 | **Full PL/SQL / cold DDL parser** | DEFER | Expand only as baseline SQL requires; full PL/SQL is out of XuGu–SS product scope for now |
+| **XA `setTransactionTimeout` / RM XA timeout abort** | DEFER | Lab: driver ignores `setTransactionTimeout` (`COMMITTED_DESPITE_TIMEOUT`). **Ops workaround:** application-level timeout / cancel **before** 2PC — do not claim RM XA timeout recovery ([xa-recovery-evidence.md](xa-recovery-evidence.md)) |
 | **Multi-machine / physical read replica topology** | NOT supported (out of Goal) | G-004 explicitly excludes multi-machine / independent physical replicas; same-host simulation only |
 | **Remote Maven publish / push / protected Ship** | Human Ship gate | Local `mvn clean install` is the consumer path until authorized |
 
@@ -90,7 +91,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | True same-host read DS routing asserts | P0-2 | Covered by B2 same-host different-DATABASE asserts; **never** claim physical replica |
 | This support matrix | P0-3 | This document |
 | Version 5.5.3-xugu.2 + release notes with known gaps | P0-4 | This release (RELEASE-NOTES-5.5.3-xugu.2.md) |
-| XA recovery (kill TM / interrupt / timeout) | P1-1 | Not claimed until evidence doc |
+| XA recovery (kill TM / interrupt / timeout) | P1-1 / G-005 T2 | Prepare-then-kill **medium** ([xa-recovery-evidence.md](xa-recovery-evidence.md)); timeout **DEFER** (app-level); strong recover **not** proven |
 | Load + fault injection report | P1-2 | Not claimed |
 | Second namespace / weak second env | P1-3 | Same host only; not multi-site |
 | ExceptionMapper expansion + error-code map | P1-4 | Baseline mapper only until expanded |
@@ -119,5 +120,5 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 |---|---|
 | **Supported** | JDBC dialect · sharding · same-host readwrite (topology caveats) · local TX+savepoint · XA wrapper (happy-path) · encrypt · LIMIT pagination · batch · federation stubs · baseline ExceptionMapper |
 | **NOT supported** | Proxy · MySQL/Oracle/PG compat modes · multi-machine / physical replica · MySQL trunk fallback |
-| **DEFER** | PrivilegeChecker · SHOW DAL merger · full PL/SQL parser |
+| **DEFER** | PrivilegeChecker · SHOW DAL merger · full PL/SQL parser · XA RM timeout (`setTransactionTimeout`) |
 | **Hardening open** | P1-1..P1-4 (XA recovery · load/fault · env2 · ExceptionMapper map) |

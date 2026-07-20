@@ -29,12 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * G-004 P1-1 — XA recovery / failure-path evidence (same-host lab).
+ * G-005 T2 / G-004 P1-1 — XA recovery / failure-path evidence (same-host lab).
  *
- * <p>Covers interrupt-before-commit, XAResource timeout, and TM-side connection kill
- * during prepare. These are <strong>shallow-to-medium</strong> client/TM failure paths;
- * they do <strong>not</strong> by themselves prove Atomikos crash-recovery replay or
- * XuGu server-side heuristic resolution after a full TM JVM death (see kill-client script).
+ * <p>Covers interrupt-before-commit, XAResource timeout (honest DEFER if ignored),
+ * TM-side connection close around prepare, and <strong>kill/close after prepare</strong>
+ * with {@code recover()} + row probe. These are shallow-to-medium client/TM paths;
+ * they do <strong>not</strong> prove Atomikos TM-log replay after JVM death (see
+ * {@code scripts/xa-recovery-kill-client.ps1} for AFTER_PREPARE JVM kill).
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class XARecoveryEvidenceIT {
@@ -114,7 +115,7 @@ class XARecoveryEvidenceIT {
 
             int ds0 = BaselineSupport.countOn(props, "jdbc.url.ds0", SS_TABLE);
             int ds1 = BaselineSupport.countOn(props, "jdbc.url.ds1", SS_TABLE);
-            System.out.println("[P1-1 interrupt] interruptedFlag=" + interruptedFlag.get()
+            System.out.println("[T2 interrupt] interruptedFlag=" + interruptedFlag.get()
                     + " workerError=" + summarize(workerError.get())
                     + " counts ds0=" + ds0 + " ds1=" + ds1);
             assertEquals(0, ds0 + ds1,
@@ -175,15 +176,19 @@ class XARecoveryEvidenceIT {
                 }
             }
             remaining = BaselineSupport.countOn(props, "jdbc.url." + DB, RAW_TABLE);
-            System.out.println("[P1-1 timeout] outcome=" + outcome + " remainingRows=" + remaining
-                    + " recover=" + Arrays.toString(safeRecover(xaRes)));
+            Xid[] recovered = safeRecover(xaRes);
+            System.out.println("[T2 timeout] outcome=" + outcome + " remainingRows=" + remaining
+                    + " recover=" + Arrays.toString(recovered));
             // Evidence probe: must observe a concrete outcome. XuGu may ignore timeout
-            // (COMMITTED_DESPITE_TIMEOUT + remainingRows>0) — that is a documented GAP, not PASS.
+            // (COMMITTED_DESPITE_TIMEOUT + remainingRows>0) — that is DEFER, not PASS.
             assertTrue(outcome.startsWith("XAException") || outcome.startsWith("COMMITTED"),
                     "timeout path produced no observable outcome: " + outcome);
-            if (remaining > 0) {
-                System.out.println("[P1-1 timeout] GAP: RM did not abort after setTransactionTimeout(2); "
-                        + "shallow evidence only — timeout recovery NOT proven");
+            if (outcome.startsWith("COMMITTED_DESPITE_TIMEOUT") || remaining > 0) {
+                System.out.println("[T2 timeout] DEFER: RM ignored setTransactionTimeout(2); "
+                        + "ops workaround = application-level timeout / cancel before 2PC; "
+                        + "do NOT claim XA timeout recovery PASS");
+            } else {
+                System.out.println("[T2 timeout] RM aborted after timeout window (observable)");
             }
         } finally {
             closeQuietly(conn);
@@ -265,7 +270,7 @@ class XARecoveryEvidenceIT {
                 closeQuietly(probe);
             }
             int remaining = BaselineSupport.countOn(props, "jdbc.url." + DB, RAW_TABLE);
-            System.out.println("[P1-1 conn-kill] prepareOutcome=" + prepareOutcome.get()
+            System.out.println("[T2 conn-kill-before-prepare] prepareOutcome=" + prepareOutcome.get()
                     + " remainingRows=" + remaining
                     + " recoverCount=" + recovered.length
                     + " recover=" + Arrays.toString(recovered));
@@ -273,12 +278,120 @@ class XARecoveryEvidenceIT {
             assertTrue(!"not-started".equals(prepareOutcome.get()),
                     "connection-kill path must reach prepare attempt");
             if (prepareOutcome.get().contains("COMMIT_OK")) {
-                System.out.println("[P1-1 conn-kill] NOTE: prepare/commit succeeded after Connection.close — "
+                System.out.println("[T2 conn-kill-before-prepare] NOTE: prepare/commit succeeded after Connection.close — "
                         + "driver kept RM branch alive (medium evidence weak on this run)");
             }
             if (recovered.length > 0) {
-                System.out.println("[P1-1 conn-kill] recover() returned in-doubt Xid(s); "
+                System.out.println("[T2 conn-kill-before-prepare] recover() returned in-doubt Xid(s); "
                         + "heuristic complete/forget NOT asserted");
+            }
+        } finally {
+            closeQuietly(conn);
+            closeQuietly(xaConn);
+            BaselineSupport.dropTableQuietly(props, "jdbc.url." + DB, RAW_TABLE);
+        }
+    }
+
+    /**
+     * Closest IT-side equivalent of kill-after-prepare: complete {@code prepare}, then close
+     * JDBC/XAConnection (TM-side disconnect), then probe rows + {@code recover()} on a fresh
+     * XA connection. Optional JVM kill after prepare is {@code xa-recovery-kill-client.ps1}.
+     */
+    @Test
+    @Order(4)
+    void killAfterPrepareLeavesRecoverableOrCleanState() throws Exception {
+        Properties props = prepareSingleDb();
+        ensureRawTable(props);
+
+        XADatasourceImp xaDs = newXaDataSource(props.getProperty("jdbc.url." + DB), props);
+        XAConnection xaConn = null;
+        Connection conn = null;
+        Xid xid = newXid("after-prep");
+        String prepareVote = "not-prepared";
+        String postCloseCommit = "not-attempted";
+        try {
+            xaConn = xaDs.getXAConnection();
+            XAResource xaRes = xaConn.getXAResource();
+            conn = xaConn.getConnection();
+            xaRes.start(xid, XAResource.TMNOFLAGS);
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO " + RAW_TABLE + " (ID, USER_ID, STATUS) VALUES (?, ?, ?)")) {
+                ps.setInt(1, 4001);
+                ps.setInt(2, 1);
+                ps.setString(3, "AFTER-PREPARE-KILL");
+                assertEquals(1, ps.executeUpdate());
+            }
+            xaRes.end(xid, XAResource.TMSUCCESS);
+            int vote = xaRes.prepare(xid);
+            prepareVote = "PREPARE_OK vote=" + vote;
+
+            // Kill/close AFTER durable prepare — TM disconnect before commit/rollback.
+            try {
+                conn.close();
+            } catch (Exception ignored) {
+                // expected
+            }
+            try {
+                xaConn.close();
+            } catch (Exception ignored) {
+                // expected
+            }
+            conn = null;
+            xaConn = null;
+
+            try {
+                xaRes.commit(xid, false);
+                postCloseCommit = "COMMIT_OK_AFTER_CLOSE";
+            } catch (XAException ex) {
+                postCloseCommit = "COMMIT_XAEX=" + ex.errorCode;
+                try {
+                    xaRes.rollback(xid);
+                    postCloseCommit = postCloseCommit + "; ROLLBACK_ATTEMPTED";
+                } catch (XAException rbEx) {
+                    postCloseCommit = postCloseCommit + "; ROLLBACK_XAEX=" + rbEx.errorCode;
+                }
+            } catch (Exception ex) {
+                postCloseCommit = "COMMIT_OTHER " + ex.getClass().getSimpleName() + ": " + ex.getMessage();
+            }
+
+            Xid[] recovered;
+            XAConnection probe = null;
+            try {
+                probe = xaDs.getXAConnection();
+                recovered = safeRecover(probe.getXAResource());
+            } finally {
+                closeQuietly(probe);
+            }
+            int remaining = BaselineSupport.countOn(props, "jdbc.url." + DB, RAW_TABLE);
+
+            String disposition;
+            if (recovered.length > 0) {
+                disposition = "IN_DOUBT_VIA_RECOVER";
+            } else if (remaining > 0) {
+                disposition = "DURABLE_ROW_NO_RECOVER";
+            } else {
+                disposition = "CLEAN_ROLLBACK_OR_ABORT";
+            }
+
+            System.out.println("[T2 kill-after-prepare] " + prepareVote
+                    + " postClose=" + postCloseCommit
+                    + " remainingRows=" + remaining
+                    + " recoverCount=" + recovered.length
+                    + " recover=" + Arrays.toString(recovered)
+                    + " disposition=" + disposition);
+
+            assertTrue(prepareVote.startsWith("PREPARE_OK"),
+                    "must reach prepare before kill/close: " + prepareVote);
+            assertTrue(!"not-attempted".equals(postCloseCommit),
+                    "must attempt commit/observe failure after prepare-close");
+            // Honest gate: observe a concrete residual disposition (do not require in-doubt).
+            assertTrue(disposition.equals("IN_DOUBT_VIA_RECOVER")
+                            || disposition.equals("CLEAN_ROLLBACK_OR_ABORT")
+                            || disposition.equals("DURABLE_ROW_NO_RECOVER"),
+                    "unexpected disposition: " + disposition);
+            if (recovered.length > 0) {
+                System.out.println("[T2 kill-after-prepare] recover() returned in-doubt Xid(s); "
+                        + "heuristic commit/rollback/forget NOT auto-completed here");
             }
         } finally {
             closeQuietly(conn);

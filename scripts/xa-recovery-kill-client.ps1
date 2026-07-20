@@ -1,4 +1,4 @@
-# G-004 P1-1 — optional client JVM kill during mid-XA (before commit).
+# G-005 T2 / P1-1 — client JVM kill AFTER XA prepare (before commit).
 # Prefer killing the client/TM JVM on the lab workstation. Do NOT kill XuGu server.
 #
 # Prerequisites:
@@ -8,8 +8,8 @@
 # Usage (from repo root):
 #   powershell -ExecutionPolicy Bypass -File .\scripts\xa-recovery-kill-client.ps1
 #
-# Evidence: prints READY_FOR_KILL, kills client, then PROBE_COUNT / PROBE_RECOVER.
-# Update docs/xa-recovery-evidence.md with the observed lines (do not invent PASS).
+# Evidence: PREPARED + READY_FOR_KILL phase=AFTER_PREPARE → Stop-Process →
+# PROBE_COUNT / PROBE_RECOVER / disposition. Document honestly in xa-recovery-evidence.md.
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
@@ -78,4 +78,5 @@ $probe = Start-Process -FilePath "java" -ArgumentList @("-cp", $Cp, $Main, "prob
 Get-Content $OutLog.Replace(".log", "-probe.log") | Tee-Object -FilePath $OutLog -Append
 Write-Host "probe exit=$($probe.ExitCode)"
 Write-Host "Full log: $OutLog"
-Write-Host "Document observed PROBE_* lines in docs/xa-recovery-evidence.md (honest: shallow if recover=0 and count=0)."
+Write-Host "Document observed PROBE_* / disposition in docs/xa-recovery-evidence.md."
+Write-Host "Honesty: IN_DOUBT_VIA_RECOVER => medium; CLEAN with count=0 after prepare-kill => medium (RM abort); Strong TM-log replay still NOT claimed."

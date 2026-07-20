@@ -13,6 +13,7 @@
         <module>parser-sql-statement-xugu</module>
         <module>parser-sql-engine-xugu</module>
         <module>infra-binder-xugu</module>
+        <module>infra-route-xugu</module>
         <module>jdbc-dialect-xugu</module>
         <module>tests-it</module>
     </modules>

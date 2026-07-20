@@ -79,7 +79,7 @@ class XuguDatabaseMetaDataTest {
         assertThat(actualTransactionOption.getDefaultIsolationLevel(), is(Connection.TRANSACTION_READ_COMMITTED));
         assertFalse(actualTransactionOption.isReturnRollbackStatementWhenCommitFailed());
         assertFalse(actualTransactionOption.isAllowCommitAndRollbackOnlyWhenTransactionFailed());
-        assertThat(actualTransactionOption.getXaDriverClassNames(), is(Collections.emptySet()));
+        assertThat(actualTransactionOption.getXaDriverClassNames(), is(Collections.singleton("com.xugu.xa.XADatasourceImp")));
         assertFalse(actualTransactionOption.getXaDriverClassNames().stream().anyMatch(name -> name.contains("OracleXA")));
     }
     

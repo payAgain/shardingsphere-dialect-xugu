@@ -17,6 +17,8 @@
         <module>infra-rewrite-xugu</module>
         <module>sharding-dialect-xugu</module>
         <module>sql-federation-xugu</module>
+        <module>transaction-xugu</module>
+        <module>database-exception-xugu</module>
         <module>jdbc-dialect-xugu</module>
         <module>tests-it</module>
     </modules>
@@ -114,6 +116,10 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

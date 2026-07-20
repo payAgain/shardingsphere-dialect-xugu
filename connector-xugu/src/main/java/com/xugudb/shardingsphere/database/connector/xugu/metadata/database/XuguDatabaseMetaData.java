@@ -61,7 +61,7 @@ public final class XuguDatabaseMetaData implements DialectDatabaseMetaData {
     @Override
     public DialectTransactionOption getTransactionOption() {
         return new DialectTransactionOption(false, false, false, false, true,
-                Connection.TRANSACTION_READ_COMMITTED, false, false, Collections.emptySet());
+                Connection.TRANSACTION_READ_COMMITTED, false, false, Collections.singleton("com.xugu.xa.XADatasourceImp"));
     }
     
     @Override

@@ -47,6 +47,16 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.xugudb.shardingsphere</groupId>
+            <artifactId>shardingsphere-transaction-xugu</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.xugudb.shardingsphere</groupId>
+            <artifactId>shardingsphere-database-exception-xugu</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>

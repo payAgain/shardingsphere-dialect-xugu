@@ -61,6 +61,7 @@ import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.InsertSi
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.InsertValuesClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.IntoClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.JoinClauseContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.LimitClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.MergeAssignmentContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.MergeAssignmentValueContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.MergeColumnValueContext;
@@ -72,8 +73,10 @@ import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.MergeUpd
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.ModelClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.MultiColumnForLoopContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.MultiTableElementContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.NumberLiteralsContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.OrderByClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.OuterJoinClauseContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.ParameterMarkerContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.ParenthesisSelectSubqueryContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.PivotClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.QueryBlockContext;
@@ -82,6 +85,7 @@ import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.QueryTab
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.QueryTableExprContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.ReferenceModelContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.RollupCubeClauseContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.RowLimitingClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.SelectContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.SelectFromClauseContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.SelectIntoStatementContext;
@@ -150,6 +154,10 @@ import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.ite
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.ExpressionOrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.IndexOrderByItemSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.order.item.OrderByItemSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.pagination.PaginationValueSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.pagination.limit.LimitSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.pagination.limit.NumberLiteralLimitValueSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.pagination.limit.ParameterMarkerLimitValueSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.predicate.HavingSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.predicate.HierarchicalQuerySegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.predicate.LockSegment;
@@ -188,6 +196,9 @@ import org.apache.shardingsphere.sql.parser.statement.core.util.SQLUtils;
 import org.apache.shardingsphere.sql.parser.statement.core.value.collection.CollectionValue;
 import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.statement.core.value.literal.impl.BooleanLiteralValue;
+import org.apache.shardingsphere.sql.parser.statement.core.value.literal.impl.NumberLiteralValue;
+import org.apache.shardingsphere.sql.parser.statement.core.value.parametermarker.ParameterMarkerValue;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -457,7 +468,12 @@ public final class XuguDMLStatementVisitor extends XuguStatementVisitor implemen
         if (null != ctx.orderByClause()) {
             result.setOrderBy((OrderBySegment) visit(ctx.orderByClause()));
         }
-        // TODO Visit rowLimitingClause
+        if (null != ctx.rowLimitingClause()) {
+            ASTNode limit = visit(ctx.rowLimitingClause());
+            if (limit instanceof LimitSegment) {
+                result.setLimit((LimitSegment) limit);
+            }
+        }
         result.addParameterMarkers(ctx.getParent() instanceof ExecuteContext ? getGlobalParameterMarkerSegments() : popAllStatementParameterMarkerSegments());
         result.getVariableNames().addAll(getVariableNames());
         return result;
@@ -610,8 +626,67 @@ public final class XuguDMLStatementVisitor extends XuguStatementVisitor implemen
         if (null != ctx.orderByClause()) {
             result.setOrderBy((OrderBySegment) visit(ctx.orderByClause()));
         }
+        if (null != ctx.rowLimitingClause()) {
+            ASTNode limit = visit(ctx.rowLimitingClause());
+            if (limit instanceof LimitSegment) {
+                result.setLimit((LimitSegment) limit);
+            }
+        }
         result.addParameterMarkers(ctx.getParent() instanceof ExecuteContext ? getGlobalParameterMarkerSegments() : popAllStatementParameterMarkerSegments());
         result.getVariableNames().addAll(getVariableNames());
+        return result;
+    }
+    
+    @Override
+    public ASTNode visitRowLimitingClause(final RowLimitingClauseContext ctx) {
+        if (null != ctx.limitClause()) {
+            return visit(ctx.limitClause());
+        }
+        // OFFSET/FETCH forms not required for baseline LIMIT pagination
+        return null;
+    }
+    
+    @Override
+    public ASTNode visitLimitClause(final LimitClauseContext ctx) {
+        PaginationValueSegment first = null;
+        PaginationValueSegment second = null;
+        for (int i = 0; i < ctx.getChildCount(); i++) {
+            ParseTree child = ctx.getChild(i);
+            if (child instanceof NumberLiteralsContext || child instanceof ParameterMarkerContext) {
+                PaginationValueSegment value = createLimitValueSegment(child);
+                if (null == first) {
+                    first = value;
+                } else {
+                    second = value;
+                }
+            }
+        }
+        PaginationValueSegment offset = null;
+        PaginationValueSegment rowCount = first;
+        if (null != second) {
+            if (null != ctx.OFFSET()) {
+                rowCount = first;
+                offset = second;
+            } else {
+                offset = first;
+                rowCount = second;
+            }
+        }
+        return new LimitSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), offset, rowCount);
+    }
+    
+    private PaginationValueSegment createLimitValueSegment(final ParseTree node) {
+        if (node instanceof NumberLiteralsContext) {
+            NumberLiteralsContext numberCtx = (NumberLiteralsContext) node;
+            NumberLiteralValue number = (NumberLiteralValue) visit(numberCtx);
+            return new NumberLiteralLimitValueSegment(numberCtx.getStart().getStartIndex(), numberCtx.getStop().getStopIndex(), number.getValue().longValue());
+        }
+        ParameterMarkerContext markerCtx = (ParameterMarkerContext) node;
+        ParameterMarkerValue marker = (ParameterMarkerValue) visit(markerCtx);
+        ParameterMarkerLimitValueSegment result = new ParameterMarkerLimitValueSegment(
+                markerCtx.getStart().getStartIndex(), markerCtx.getStop().getStopIndex(), marker.getValue());
+        getGlobalParameterMarkerSegments().add(result);
+        getStatementParameterMarkerSegments().add(result);
         return result;
     }
     

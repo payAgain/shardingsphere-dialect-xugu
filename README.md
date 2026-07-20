@@ -1,33 +1,71 @@
 ﻿# shardingsphere-dialect-xugu
 
-Apache ShardingSphere XuGu native JDBC dialect plugin. **Only `compatiblemode=NONE` is supported** for integration tests and production use documented here. The project depends on **ShardingSphere 5.5.3** (`org.apache.shardingsphere:*:5.5.3`). Integration test database host, port, and credentials are configurable via `tests-it` properties (see Task 4+).
+Apache ShardingSphere **XuGu native JDBC dialect** plugin for **5.5.3**, released as **`5.5.3-xugu.1`**.
 
-Install the XuGu JDBC driver locally before building:
+**Start here:** [docs/quick-start.md](docs/quick-start.md) (≈30-minute path: install driver → depend on dialect → dual-DS YAML → verify).
+
+## Release coordinates
+
+| Artifact | Version |
+|---|---|
+| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | `5.5.3-xugu.1` |
+| Upstream `org.apache.shardingsphere:shardingsphere-jdbc` | `5.5.3` |
+| XuGu driver `com.xugudb:xugu-jdbc` | `12.3.6` (install into local `.m2` first) |
+
+```xml
+<dependency>
+  <groupId>com.xugudb.shardingsphere</groupId>
+  <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
+  <version>5.5.3-xugu.1</version>
+</dependency>
+```
+
+## Scope (read this)
+
+| In scope | Out of scope |
+|---|---|
+| JDBC dialect SPI (`getDatabaseType() == "XuGu"`) | ShardingSphere **Proxy** |
+| **`compatiblemode=NONE` only** | Other XuGu compatible modes |
+| Sharding CRUD + LIMIT pagination | **MySQL trunk** fallback |
+| Local Maven install / consumer apps | Remote publish (no push required for local use) |
+
+Example YAML: [docs/examples/sharding-two-ds.yaml](docs/examples/sharding-two-ds.yaml).
+
+## Build
 
 ```powershell
+# Install XuGu JDBC once
 mvn install:install-file -Dfile=path\to\xugu-jdbc-12.3.6.jar -DgroupId=com.xugudb -DartifactId=xugu-jdbc -Dversion=12.3.6 -Dpackaging=jar
+
+# Unit tests (Surefire excludes *IT)
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -q test
+
+# Install release into local .m2
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -q clean install
 ```
 
-Validate the multi-module skeleton:
+## Integration tests
+
+Default host: `192.168.2.239:5138` · credentials in `tests-it/src/test/resources/it-xugu.properties` · **`compatiblemode=NONE`**. Unreachable hosts → Assumption skip.
 
 ```powershell
-mvn -q validate
+# Dual-DS sharding CRUD + LIMIT
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it -am test -Pit-xugu -Dtest=ShardingCrudIT -Dsurefire.failIfNoSpecifiedTests=false
+
+# Single-DS native CRUD
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it -am test -Pit-xugu -Dtest=NativeCrudIT -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
-## Verification
+## Documentation
 
-Unit / module tests:
-
-```powershell
-mvn -q test
-```
-
-Default `mvn test` runs unit tests only (Surefire excludes `**/*IT.java` and `**/it/**`). Live XuGu IT (host from `tests-it/src/test/resources/it-xugu.properties`; skips if unreachable):
-
-```powershell
-mvn -pl tests-it -am test -Pit-xugu
-# or a single IT:
-mvn -pl tests-it -am test -Pit-xugu -Dtest=NativeCrudIT -Dsurefire.failIfNoSpecifiedTests=false
-```
-
-`NativeCrudIT` creates a ShardingSphere-JDBC DataSource (single DS, `compatiblemode=NONE`) and runs CREATE / INSERT / SELECT / UPDATE / DELETE / DROP through the XuGu native dialect SPI.
+| Doc | Purpose |
+|---|---|
+| [docs/quick-start.md](docs/quick-start.md) | 30-min consumer path |
+| [docs/examples/sharding-two-ds.yaml](docs/examples/sharding-two-ds.yaml) | Dual-DS sharding YAML (placeholders) |
+| [docs/m0-m1-acceptance.md](docs/m0-m1-acceptance.md) | M0–M1 acceptance (connector + parser + NativeCrudIT) |
+| [docs/m2-acceptance.md](docs/m2-acceptance.md) | M2 acceptance (route/rewrite + ShardingCrudIT) |
+| [docs/m3-acceptance.md](docs/m3-acceptance.md) | M3 acceptance (system DB / bind / federation + parity) |
+| [docs/m4-acceptance.md](docs/m4-acceptance.md) | M4 acceptance (release + smoke; added at M4-3) |
+| [docs/parity-matrix.md](docs/parity-matrix.md) | SPI / capability PASS·DEFER matrix |
+| [docs/pagination-decision.md](docs/pagination-decision.md) | LIMIT vs ROWNUM probe → LIMIT |
+| [docs/syntax-whitelist-m1.md](docs/syntax-whitelist-m1.md) | Parser syntax whitelist |

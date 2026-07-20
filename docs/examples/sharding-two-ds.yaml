@@ -1,0 +1,43 @@
+# Dual-datasource database sharding — XuGu native dialect (classpath SPI)
+# Only compatiblemode=NONE is supported. Replace placeholders before use.
+# XuGu IdentifierPatternType=UPPER_CASE; physical names stored uppercase.
+databaseName: logic_db
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: jdbc:xugu://<HOST>:<PORT>/<DB0>?compatiblemode=NONE&charset=UTF8
+    username: <USER>
+    password: <PASSWORD>
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: jdbc:xugu://<HOST>:<PORT>/<DB1>?compatiblemode=NONE&charset=UTF8
+    username: <USER>
+    password: <PASSWORD>
+
+rules:
+- !SHARDING
+  tables:
+    t_order:
+      actualDataNodes: ds_${0..1}.T_ORDER
+      databaseStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: database_inline
+      tableStrategy:
+        none:
+  shardingAlgorithms:
+    database_inline:
+      type: INLINE
+      props:
+        algorithm-expression: ds_${user_id % 2}
+
+props:
+  sql-show: true

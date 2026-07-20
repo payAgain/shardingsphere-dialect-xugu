@@ -1,0 +1,24 @@
+# SQL corpus single datasource — isolated corpus_* DATABASE
+databaseName: corpus_logic
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.corpus_ds0}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+
+rules:
+- !SINGLE
+  tables:
+    - "*.*"
+  defaultDataSource: ds_0
+
+props:
+  sql-show: true

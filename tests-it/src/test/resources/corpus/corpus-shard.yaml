@@ -1,0 +1,41 @@
+# SQL corpus dual-DS database sharding — isolated corpus_* DATABASE
+databaseName: corpus_shard
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.corpus_ds0}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.corpus_ds1}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+
+rules:
+- !SHARDING
+  tables:
+    corpus_order:
+      actualDataNodes: ds_${0..1}.CORPUS_ORDER
+      databaseStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: corpus_db_inline
+      tableStrategy:
+        none:
+  shardingAlgorithms:
+    corpus_db_inline:
+      type: INLINE
+      props:
+        algorithm-expression: ds_${user_id % 2}
+
+props:
+  sql-show: true

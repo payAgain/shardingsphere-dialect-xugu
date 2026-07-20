@@ -1,0 +1,81 @@
+id	category	sql_or_desc	expect	status	channel	reason
+C001	select	SELECT 1 FROM DUAL	both	PASS	native	
+C002	select	SELECT 1 AS N FROM DUAL	both	PASS	native	
+C003	select	SELECT 1 + 1 AS N FROM DUAL	both	PASS	native	
+C004	select	SELECT 'xugu' AS S FROM DUAL	both	PASS	native	
+C005	select	SELECT NULL AS N FROM DUAL	both	PASS	native	
+C006	parse	SELECT 1 FROM DUAL	parse	PASS	parse	
+C007	parse	SELECT id, name FROM t_order WHERE id = 1	parse	PASS	parse	
+C008	parse	INSERT INTO t_order (id, name) VALUES (1, 'a')	parse	PASS	parse	
+C009	parse	UPDATE t_order SET name = 'b' WHERE id = 1	parse	PASS	parse	
+C010	parse	DELETE FROM t_order WHERE id = 1	parse	PASS	parse	
+C011	parse	CREATE TABLE t_order (id INT PRIMARY KEY, name VARCHAR(64))	parse	PASS	parse	
+C012	parse	DROP TABLE t_order	parse	PASS	parse	
+C013	parse	COMMIT	parse	PASS	parse	
+C014	parse	ROLLBACK	parse	PASS	parse	
+C015	parse	SELECT 1 FROM DUAL LIMIT 1	parse	PASS	parse	
+C016	ddl	CREATE TABLE CORPUS_SIMPLE (ID INT PRIMARY KEY, NAME VARCHAR(64))	execute	PASS	native	
+C017	ddl	DROP TABLE CORPUS_SIMPLE	execute	PASS	native	
+C018	dml	INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) VALUES (1, 1, 'NEW', 10, 'a')	execute	PASS	native	
+C019	dml	SELECT ID, NAME FROM CORPUS_T WHERE ID = 1	execute	PASS	native	
+C020	dml	UPDATE CORPUS_T SET NAME = 'b' WHERE ID = 1	execute	PASS	native	
+C021	dml	DELETE FROM CORPUS_T WHERE ID = 1	execute	PASS	native	
+C022	dml	INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) VALUES (2, 2, 'NEW', 20, 'c')	execute	PASS	ss	
+C023	dml	SELECT ID, STATUS FROM CORPUS_T WHERE ID = 2	execute	PASS	ss	
+C024	dml	UPDATE CORPUS_T SET STATUS = 'PAID' WHERE ID = 2	execute	PASS	ss	
+C025	dml	DELETE FROM CORPUS_T WHERE ID = 2	execute	PASS	ss	
+C026	select	SELECT COUNT(*) FROM CORPUS_T	execute	PASS	native	
+C027	select	SELECT ID FROM CORPUS_T WHERE USER_ID = 1	execute	PASS	native	
+C028	select	SELECT ID FROM CORPUS_T WHERE STATUS = 'NEW'	execute	PASS	native	
+C029	select	SELECT ID FROM CORPUS_T WHERE AMT >= 10	execute	PASS	native	
+C030	select	SELECT ID FROM CORPUS_T WHERE NAME LIKE 'a%'	execute	PASS	native	
+C031	select	SELECT ID FROM CORPUS_T WHERE ID IN (1, 2, 3)	execute	PASS	native	
+C032	select	SELECT ID FROM CORPUS_T WHERE AMT BETWEEN 1 AND 100	execute	PASS	native	
+C033	select	SELECT ID FROM CORPUS_T WHERE NAME IS NOT NULL	execute	PASS	native	
+C034	limit	SELECT ID FROM CORPUS_T LIMIT 5	execute	PASS	native	
+C035	limit	SELECT ID FROM CORPUS_T LIMIT 3	execute	PASS	ss	
+C036	limit	SELECT ID FROM CORPUS_T ORDER BY ID LIMIT 2	execute	PASS	native	
+C037	limit	SELECT ID FROM CORPUS_T LIMIT 1	execute	PASS	ss	
+C038	order	SELECT ID FROM CORPUS_T ORDER BY ID ASC	execute	PASS	native	
+C039	order	SELECT ID FROM CORPUS_T ORDER BY ID DESC	execute	PASS	native	
+C040	agg	SELECT SUM(AMT) FROM CORPUS_T	execute	PASS	native	
+C041	agg	SELECT MAX(AMT) FROM CORPUS_T	execute	PASS	native	
+C042	agg	SELECT MIN(AMT) FROM CORPUS_T	execute	PASS	native	
+C043	agg	SELECT AVG(AMT) FROM CORPUS_T	execute	PASS	native	
+C044	tx	scenario:commit keeps row	execute	PASS	native	
+C045	tx	scenario:rollback drops row	execute	PASS	native	
+C046	tx	scenario:savepoint rollback keeps earlier	execute	PASS	ss	
+C047	shard	INSERT INTO corpus_order (id, user_id, status) VALUES (10, 1, 'NEW')	execute	PASS	ss_shard	
+C048	shard	SELECT id, status FROM corpus_order WHERE id = 10 AND user_id = 1	execute	PASS	ss_shard	
+C049	shard	INSERT INTO corpus_order (id, user_id, status) VALUES (11, 2, 'NEW')	execute	PASS	ss_shard	
+C050	shard	SELECT id FROM corpus_order WHERE user_id = 2 AND id = 11	execute	PASS	ss_shard	
+C051	shard	UPDATE corpus_order SET status = 'OK' WHERE id = 10 AND user_id = 1	execute	PASS	ss_shard	
+C052	shard	DELETE FROM corpus_order WHERE id = 11 AND user_id = 2	execute	PASS	ss_shard	
+C053	batch	scenario:batch insert 3 rows native	execute	PASS	native	
+C054	dml	INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) VALUES (100, 1, 'SEED', 1, 's')	execute	PASS	native	
+C055	dml	INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) VALUES (101, 1, 'SEED', 2, 's')	execute	PASS	native	
+C056	dml	INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) VALUES (102, 2, 'SEED', 3, 's')	execute	PASS	native	
+C057	select	SELECT ID FROM CORPUS_T WHERE USER_ID = 1 AND STATUS = 'SEED'	execute	PASS	ss	
+C058	limit	SELECT ID FROM CORPUS_T WHERE STATUS = 'SEED' LIMIT 2	execute	PASS	ss	
+C059	select	SELECT DISTINCT STATUS FROM CORPUS_T	execute	PASS	native	
+C060	select	SELECT ID FROM CORPUS_T WHERE ID <> 0	execute	PASS	native	
+C061	advanced	WITH cte AS (SELECT 1 AS N FROM DUAL) SELECT N FROM cte	both	DEFER	native	CTE not in XuGu-SS whitelist / parser scope
+C062	advanced	SELECT * FROM CORPUS_T WINDOW w AS (PARTITION BY USER_ID)	both	DEFER	native	WINDOW clause out of baseline whitelist
+C063	advanced	MERGE INTO CORPUS_T t USING DUAL s ON (1=0) WHEN MATCHED THEN UPDATE SET NAME='x'	both	DEFER	native	MERGE not supported in XuGu-SS dialect whitelist
+C064	advanced	SELECT ID FROM CORPUS_T START WITH ID = 1 CONNECT BY PRIOR ID = USER_ID	both	DEFER	native	hierarchical CONNECT BY out of scope
+C065	advanced	SELECT * FROM CORPUS_T FOR UPDATE	both	DEFER	ss	FOR UPDATE locking semantics not corpus-proven on SS path
+C066	advanced	CREATE PROCEDURE CORPUS_P AS BEGIN NULL; END	both	DEFER	native	full PL/SQL parser DEFER per support-matrix
+C067	advanced	SELECT ID FROM CORPUS_T INTERSECT SELECT ID FROM CORPUS_T	both	DEFER	native	set INTERSECT not in whitelist
+C068	advanced	SELECT ID FROM CORPUS_T MINUS SELECT ID FROM CORPUS_T WHERE 1=0	both	DEFER	native	MINUS set op not in whitelist
+C069	advanced	SELECT * FROM CORPUS_T a FULL OUTER JOIN CORPUS_T b ON a.ID = b.ID	both	DEFER	ss_shard	FULL OUTER JOIN / federation sensitive
+C070	advanced	SELECT ROWNUM FROM CORPUS_T WHERE ROWNUM <= 5	both	DEFER	native	product pagination strategy is LIMIT not ROWNUM
+C071	advanced	SELECT ID FROM CORPUS_T OFFSET 1 ROWS FETCH NEXT 5 ROWS ONLY	both	DEFER	native	ANSI OFFSET/FETCH disabled for XuGu rewrite
+C072	advanced	CREATE INDEX CORPUS_IDX ON CORPUS_T (NAME)	both	DEFER	native	cold DDL index not required for corpus PASS gate
+C073	advanced	ALTER TABLE CORPUS_T ADD REMARK VARCHAR(32)	both	DEFER	native	ALTER TABLE cold DDL expand-only-if-needed
+C074	advanced	TRUNCATE TABLE CORPUS_T	both	DEFER	ss	TRUNCATE through SS not corpus-proven
+C075	advanced	INSERT INTO CORPUS_T SELECT ID, USER_ID, STATUS, AMT, NAME FROM CORPUS_T WHERE 1=0	both	DEFER	ss	INSERT..SELECT federation/bind edge
+C076	xa	scenario:xa prepare-only corpus probe	execute	DEFER	ss	XA prepare-kill is G-005 T2 not T1 corpus
+C077	privilege	GRANT SELECT ON CORPUS_T TO PUBLIC	both	DEFER	native	PrivilegeChecker / GRANT path DEFER
+C078	dal	SHOW TABLES	both	DEFER	ss	SHOW DAL merger DEFER per support-matrix
+C079	advanced	SELECT JSON_OBJECT('a':1) FROM DUAL	both	DEFER	native	JSON functions not in whitelist
+C080	advanced	SELECT REGEXP_LIKE(NAME, '^a') FROM CORPUS_T	both	DEFER	native	regex helper not corpus-scoped

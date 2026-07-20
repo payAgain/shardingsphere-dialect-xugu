@@ -34,7 +34,7 @@ Capabilities below are **in product scope** and have dialect SPI and/or baseline
 | **JDBC dialect SPI** | Supported | `DatabaseType`, connection props, metadata, result-set mapper, system DB, default query props (`compatiblemode=NONE`) | [parity-matrix.md](parity-matrix.md) §B · [quick-start.md](quick-start.md) |
 | **SQL parse / bind / route / rewrite** | Supported (whitelist) | XuGu facade + visitors needed for baseline CRUD; binder + route DAL + rewrite modules | Expand parser only as baseline SQL requires; not full XuGu SQL |
 | **Sharding (DB / table)** | Supported | Dual-DS (or multi-node) sharding CRUD, joins on sharded order/item patterns | B1 · example YAML [`examples/sharding-two-ds.yaml`](examples/sharding-two-ds.yaml) |
-| **Readwrite-splitting (same-host)** | Supported *with topology caveat* | Logical `write_ds` + `read_ds_*` configuration | B2 today maps read URLs to the **same physical DB** (no replica). G-004 P0-2 aims at same-host **different DATABASE** routing asserts — **not** physical replica lag/isolation |
+| **Readwrite-splitting (same-host)** | Supported *with topology caveat* | Logical `write_ds` + `read_ds_*`; same-host different DATABASE; optional restricted SELECT-only read user | B2 + T3=A (`docs/topology-same-host.md`): routing to distinct DATABASE names + read-DS privilege deepen. **Never** physical replica lag/isolation |
 | **Local TX + savepoint** | Supported | Commit / full rollback / `RELEASE SAVEPOINT` provider | B3 · `XuguSavepointReleaseSQLProvider` |
 | **XA wrapper** | Supported (happy-path) | `XuguXAConnectionWrapper` → `com.xugu.xa.XAConnectionImp`; metadata XA DS `com.xugu.xa.XADatasourceImp` | B7 commit/rollback across shards; may Assumption-skip if Atomikos/XuGu XA init fails. Prepare-then-kill evidence = **medium** ([xa-recovery-evidence.md](xa-recovery-evidence.md)); **strong** TM-log recovery **not** claimed. **XA timeout = DEFER** (app-level timeout) |
 | **Encrypt** | Supported | Column encrypt/decrypt via SS encrypt rule (no XuGu-specific encrypt SPI) | B6 AES phone column |
@@ -69,7 +69,7 @@ Catalog detail: [baseline-catalog.md](baseline-catalog.md). Run with `-Pbaseline
 | ID | Scenario | PASS means (IT contract) | Does **not** prove |
 |---|---|---|---|
 | **B1** | Order DB+table sharding | Place order + item; query by `order_id`; empty miss + duplicate PK fail; 8-thread insert/select smoke | Full SQL surface; cross-region sharding ops |
-| **B2** | Readwrite splitting | Insert + select through `write_ds` / `read_ds_*`; empty/dup PK; concurrent write/read smoke | Physical replica isolation or lag; until P0-2, read may share write physical DB |
+| **B2** | Readwrite splitting | Insert + select through `write_ds` / `read_ds_*`; empty/dup PK; concurrent write/read; same-host different-DATABASE routing; T3=A restricted read-user INSERT-deny / SELECT-ok when lab allows | Physical replica isolation or lag; multi-machine topology |
 | **B3** | Local TX + savepoint | Rollback-to-savepoint keeps earlier rows; full rollback → 0 rows; concurrent local commit smoke | Distributed TX; XA recovery |
 | **B4** | Batch insert | ~20-row batch across shards; empty batch no-op; dup-in-batch fails; concurrent batch smoke | Unlimited batch size / pool exhaustion (P1-2) |
 | **B5** | Pagination `LIMIT` | `LIMIT 5` ≤5 rows; empty table → 0; concurrent LIMIT smoke | ROWNUM product path (probe-only; strategy is LIMIT) |
@@ -88,7 +88,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | Gap | Goal item | Current stance |
 |---|---|---|
 | Boundary / failure / concurrency per scenario | P0-1 | In progress / catalog lists ≥3 tests per B*; keep evidence current |
-| True same-host read DS routing asserts | P0-2 | Covered by B2 same-host different-DATABASE asserts; **never** claim physical replica |
+| True same-host read DS routing + privilege deepen | P0-2 / G-005 T3=A | Different-DATABASE routing + restricted read user on read DS URLs ([topology-same-host.md](topology-same-host.md)); **never** claim physical replica |
 | This support matrix | P0-3 | This document |
 | Version 5.5.3-xugu.2 + release notes with known gaps | P0-4 | This release (RELEASE-NOTES-5.5.3-xugu.2.md) |
 | XA recovery (kill TM / interrupt / timeout) | P1-1 / G-005 T2 | Prepare-then-kill **medium** ([xa-recovery-evidence.md](xa-recovery-evidence.md)); timeout **DEFER** (app-level); strong recover **not** proven |
@@ -110,6 +110,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | [quick-start.md](quick-start.md) | ≈30-min consumer install path |
 | [pagination-decision.md](pagination-decision.md) | LIMIT vs ROWNUM probe → LIMIT |
 | [g003-acceptance.md](g003-acceptance.md) | Prior Goal Accept (baseline + DEFER clearance) |
+| [topology-same-host.md](topology-same-host.md) | T3=A same-host deepen limits + BLOCKED_ENV |
 | [examples/sharding-two-ds.yaml](examples/sharding-two-ds.yaml) | Dual-DS sharding YAML template |
 
 ---

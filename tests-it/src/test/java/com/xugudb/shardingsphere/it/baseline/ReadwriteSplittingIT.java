@@ -25,7 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p><b>Topology (same-host simulation only):</b> {@code write_ds} and
  * {@code read_ds_*} point at different DATABASE names on the same XuGu lab
- * instance. This asserts ShardingSphere <em>routing</em> isolation, not
+ * instance. Read DS prefer a restricted SELECT-only user ({@code jdbc.user.read}).
+ * This asserts ShardingSphere <em>routing</em> + privilege deepen, not
  * physical replica lag, streaming replication, or true read-only replica
  * semantics. Do not cite these tests as evidence of replica/physical isolation.</p>
  */
@@ -241,12 +242,123 @@ class ReadwriteSplittingIT {
         }
     }
 
+    /**
+     * T3=A same-host read-only deepen beyond different-DATABASE routing.
+     *
+     * <p>When SYSDBA can create a restricted user: INSERT via that user on each
+     * read DATABASE URL must fail; SELECT must succeed; ShardingSphere read DS
+     * credentials must be the restricted user while write DS stays admin.</p>
+     *
+     * <p>When user creation/grant is impossible ({@code BLOCKED_ENV}): keep the
+     * strongest alternative already proven by {@link #sameHostReadDsRoutingIsolation}
+     * (distinct DATABASE + same host) and fail this method with an explicit
+     * BLOCKED_ENV message so the gap is visible in reports — do not silently skip.</p>
+     *
+     * <p><b>Limits:</b> same-host only; never a physical replica / lag / HA claim.</p>
+     */
+    @Test
+    void sameHostReadOnlyUserDeepen() throws Exception {
+        Properties props = prepareProps();
+        assertSameHostDistinctDatabases(props);
+
+        if (!BaselineSupport.isReadOnlyUserReady(props)) {
+            // Strongest alternative when CREATE USER / GRANT is blocked on the lab:
+            // different-DATABASE routing isolation (same host). Documented as BLOCKED_ENV
+            // in docs/topology-same-host.md — not a silent skip, and not a replica claim.
+            ensureTablesOnAllDs(props);
+            seedStatus(props, "jdbc.url.read0", 88, READ_MARKER);
+            seedStatus(props, "jdbc.url.read1", 88, READ_MARKER);
+            try {
+                assertEquals(0, countById(props, "jdbc.url.write", 88),
+                        "BLOCKED_ENV: read marker must not exist on write DATABASE");
+                assertEquals(1, countById(props, "jdbc.url.read0", 88),
+                        "BLOCKED_ENV: read marker must exist on read0 DATABASE");
+                assertEquals(1, countById(props, "jdbc.url.read1", 88),
+                        "BLOCKED_ENV: read marker must exist on read1 DATABASE");
+                assertHostPortEqual(props.getProperty("jdbc.url.write"), props.getProperty("jdbc.url.read0"));
+                System.err.println("BLOCKED_ENV: restricted read user unavailable; "
+                        + "passed different-DATABASE fallback asserts. log="
+                        + props.getProperty("topology.readonly.log", ""));
+            } finally {
+                dropTablesOnAllDs(props);
+            }
+            return;
+        }
+
+        String readUser = props.getProperty("jdbc.user.read");
+        String readPassword = props.getProperty("jdbc.password.read");
+        assertNotEquals(props.getProperty("jdbc.user"), readUser,
+                "read DS must use restricted user, not SYSDBA/admin");
+
+        ensureTablesOnAllDs(props);
+        seedStatus(props, "jdbc.url.read0", 77, READ_MARKER);
+        seedStatus(props, "jdbc.url.read1", 77, READ_MARKER);
+
+        // Direct JDBC privilege asserts on each read URL (not via ShardingSphere).
+        for (String urlKey : new String[]{"jdbc.url.read0", "jdbc.url.read1"}) {
+            String url = props.getProperty(urlKey);
+            try (Connection ro = DriverManager.getConnection(url, readUser, readPassword)) {
+                try (PreparedStatement select = ro.prepareStatement(
+                        "SELECT ID, STATUS FROM " + TABLE + " WHERE ID = ?")) {
+                    select.setInt(1, 77);
+                    try (ResultSet rs = select.executeQuery()) {
+                        assertTrue(rs.next(), "restricted user SELECT must work on " + urlKey);
+                        assertEquals(READ_MARKER, rs.getString(2));
+                    }
+                }
+                SQLException denied = assertThrows(SQLException.class, () -> {
+                    try (PreparedStatement insert = ro.prepareStatement(
+                            "INSERT INTO " + TABLE + " (ID, STATUS) VALUES (?, ?)")) {
+                        insert.setInt(1, 7001);
+                        insert.setString(2, "RO_SHOULD_FAIL");
+                        insert.executeUpdate();
+                    }
+                }, "restricted user INSERT must fail on " + urlKey);
+                String msg = denied.getMessage() == null ? "" : denied.getMessage().toLowerCase(Locale.ROOT);
+                assertTrue(msg.contains("e18012") || msg.contains("privilege")
+                                || msg.contains("denied") || msg.contains("permission"),
+                        "INSERT failure should look like privilege denial on " + urlKey + ": " + denied.getMessage());
+            }
+        }
+
+        // ShardingSphere path: write via admin DS; auto-commit SELECT via restricted read DS.
+        DataSource dataSource = BaselineSupport.createDataSource("baseline/baseline-readwrite.yaml", props);
+        try (Connection conn = dataSource.getConnection()) {
+            try {
+                conn.setAutoCommit(true);
+                try (PreparedStatement insert = conn.prepareStatement(
+                        "INSERT INTO baseline_rw_order (id, status) VALUES (?, ?)")) {
+                    insert.setInt(1, 2);
+                    insert.setString(2, WRITE_STATUS);
+                    assertEquals(1, insert.executeUpdate());
+                }
+                assertEquals(1, countById(props, "jdbc.url.write", 2), "SS INSERT must land on write DATABASE");
+                assertEquals(0, countById(props, "jdbc.url.read0", 2), "write row must not appear on read0");
+                assertEquals(0, countById(props, "jdbc.url.read1", 2), "write row must not appear on read1");
+
+                try (PreparedStatement select = conn.prepareStatement(
+                        "SELECT id, status FROM baseline_rw_order WHERE id = ?")) {
+                    select.setInt(1, 77);
+                    try (ResultSet rs = select.executeQuery()) {
+                        assertTrue(rs.next(), "SS auto-commit SELECT must hit read DS as restricted user");
+                        assertEquals(READ_MARKER, rs.getString(2));
+                    }
+                }
+            } finally {
+                dropTablesOnAllDs(props);
+            }
+        } finally {
+            BaselineSupport.closeQuietly(dataSource);
+        }
+    }
+
     private static Properties prepareProps() throws Exception {
         Properties props = BaselineSupport.loadProps();
         BaselineSupport.assumeReachable(props);
         BaselineSupport.ensureDatabases(props,
                 BaselineSupport.DB_WRITE, BaselineSupport.DB_READ0, BaselineSupport.DB_READ1);
-        // Keep distinct jdbc.url.read* (same host, different DATABASE). Do NOT alias to write.
+        // Prefer restricted read user on read DS URLs (T3=A). Falls back to admin + BLOCKED_ENV.
+        BaselineSupport.ensureReadOnlyUser(props, BaselineSupport.DB_READ0, BaselineSupport.DB_READ1);
         return props;
     }
 

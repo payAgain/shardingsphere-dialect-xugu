@@ -1,5 +1,6 @@
-# B2: readwrite-splitting (3 logical DS on same XuGu host, different DATABASE paths).
-# Same-host routing simulation only — NOT a physical read replica / lag topology.
+# B2 / T3=A: readwrite-splitting (same XuGu host, different DATABASE paths).
+# write_ds uses admin (SYSDBA); read_ds_* prefer restricted SELECT-only user (jdbc.user.read).
+# Same-host privilege + routing simulation only — NOT a physical read replica / lag topology.
 databaseName: baseline_rw_db
 
 mode:
@@ -18,14 +19,14 @@ dataSources:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.xugu.cloudjdbc.Driver
     jdbcUrl: ${jdbc.url.read0}
-    username: ${jdbc.user}
-    password: ${jdbc.password}
+    username: ${jdbc.user.read}
+    password: ${jdbc.password.read}
   read_ds_1:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.xugu.cloudjdbc.Driver
     jdbcUrl: ${jdbc.url.read1}
-    username: ${jdbc.user}
-    password: ${jdbc.password}
+    username: ${jdbc.user.read}
+    password: ${jdbc.password.read}
 
 rules:
 - !READWRITE_SPLITTING

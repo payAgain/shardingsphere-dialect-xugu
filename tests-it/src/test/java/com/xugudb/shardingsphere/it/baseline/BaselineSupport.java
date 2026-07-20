@@ -49,6 +49,14 @@ public final class BaselineSupport {
 
     public static String DB_READ1 = DEFAULT_DB_READ1;
 
+    /** Lab read-only user for same-host topology deepen (T3=A); SELECT-only, not a replica. */
+    public static final String DEFAULT_READ_USER = "ss_ro_reader";
+
+    public static final String DEFAULT_READ_PASSWORD = "ss_ro_reader";
+
+    /** {@code OK} when restricted read user is ready; {@code BLOCKED_ENV} when CREATE/GRANT failed. */
+    public static final String PROP_READONLY_STATUS = "topology.readonly.status";
+
     private BaselineSupport() {
     }
 
@@ -126,6 +134,75 @@ public final class BaselineSupport {
             props.setProperty("jdbc.url.read1", props.getProperty("jdbc.url." + DB_READ1));
         }
         return log;
+    }
+
+    /**
+     * Create/grant a restricted XuGu user on each read DATABASE and bind it to read DS URLs.
+     *
+     * <p>XuGu users are per-DATABASE. New users start with no privileges; we grant
+     * {@code SELECT ANY TABLE} only (INSERT must fail). Read JDBC URLs get
+     * {@code current_schema=SYSDBA} so unqualified table names resolve to SYSDBA-owned
+     * baseline tables. This deepens same-host privilege isolation — <b>not</b> a physical
+     * read replica.</p>
+     *
+     * @return {@code true} when user+grant+URL rewrite succeeded for every read DATABASE
+     */
+    public static boolean ensureReadOnlyUser(final Properties props, final String... readDatabases) throws Exception {
+        String readUser = props.getProperty("jdbc.user.read", DEFAULT_READ_USER);
+        String readPassword = props.getProperty("jdbc.password.read", DEFAULT_READ_PASSWORD);
+        String adminUser = props.getProperty("jdbc.user");
+        String adminPassword = props.getProperty("jdbc.password");
+        List<String> log = new ArrayList<>();
+        boolean allOk = readDatabases != null && readDatabases.length > 0;
+        for (String database : readDatabases) {
+            String url = props.getProperty("jdbc.url." + database);
+            if (url == null || url.isEmpty()) {
+                log.add("RO_URL_" + database + "=MISSING");
+                allOk = false;
+                continue;
+            }
+            try (Connection admin = DriverManager.getConnection(url, adminUser, adminPassword);
+                 Statement st = admin.createStatement()) {
+                tryExecute(st, "CREATE USER " + readUser + " IDENTIFIED BY '" + readPassword + "'",
+                        log, "CREATE_USER_" + database);
+                // User may already exist from a prior run — GRANT is the decisive step.
+                if (!tryExecute(st, "GRANT SELECT ANY TABLE TO " + readUser, log, "GRANT_SELECT_" + database)) {
+                    allOk = false;
+                    continue;
+                }
+                if (!canConnect(withCurrentSchema(url, "SYSDBA"), readUser, readPassword, log, "CONNECT_RO_" + database)) {
+                    allOk = false;
+                    continue;
+                }
+                String schemaUrl = withCurrentSchema(url, "SYSDBA");
+                props.setProperty("jdbc.url." + database, schemaUrl);
+            } catch (Exception ex) {
+                log.add("RO_SETUP_" + database + "=FAIL: " + ex.getMessage());
+                allOk = false;
+            }
+        }
+        if (allOk) {
+            props.setProperty("jdbc.user.read", readUser);
+            props.setProperty("jdbc.password.read", readPassword);
+            if (props.containsKey("jdbc.url." + DB_READ0)) {
+                props.setProperty("jdbc.url.read0", props.getProperty("jdbc.url." + DB_READ0));
+            }
+            if (props.containsKey("jdbc.url." + DB_READ1)) {
+                props.setProperty("jdbc.url.read1", props.getProperty("jdbc.url." + DB_READ1));
+            }
+            props.setProperty(PROP_READONLY_STATUS, "OK");
+        } else {
+            // Strongest safe fallback: keep admin credentials on read URLs (B2 different-DATABASE only).
+            props.setProperty("jdbc.user.read", adminUser);
+            props.setProperty("jdbc.password.read", adminPassword);
+            props.setProperty(PROP_READONLY_STATUS, "BLOCKED_ENV");
+        }
+        props.setProperty("topology.readonly.log", String.join(" | ", log));
+        return allOk;
+    }
+
+    public static boolean isReadOnlyUserReady(final Properties props) {
+        return "OK".equalsIgnoreCase(props.getProperty(PROP_READONLY_STATUS, ""));
     }
 
     public static byte[] loadYaml(final String resourceName, final Properties props) throws Exception {
@@ -229,9 +306,11 @@ public final class BaselineSupport {
         }
     }
 
-    /** Unused helper retained for schema-mode experiments. */
-    @SuppressWarnings("unused")
-    static String withCurrentSchema(final String jdbcUrl, final String schema) {
+    /**
+     * Ensure JDBC URL carries {@code current_schema=} so a restricted user can resolve
+     * SYSDBA-owned unqualified table names on the same DATABASE.
+     */
+    public static String withCurrentSchema(final String jdbcUrl, final String schema) {
         String marker = "current_schema=";
         int idx = jdbcUrl.toLowerCase(Locale.ROOT).indexOf(marker);
         if (idx >= 0) {

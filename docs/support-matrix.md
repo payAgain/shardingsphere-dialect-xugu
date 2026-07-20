@@ -36,7 +36,7 @@ Capabilities below are **in product scope** and have dialect SPI and/or baseline
 | **Sharding (DB / table)** | Supported | Dual-DS (or multi-node) sharding CRUD, joins on sharded order/item patterns | B1 · example YAML [`examples/sharding-two-ds.yaml`](examples/sharding-two-ds.yaml) |
 | **Readwrite-splitting (same-host)** | Supported *with topology caveat* | Logical `write_ds` + `read_ds_*`; same-host different DATABASE; optional restricted SELECT-only read user | B2 + T3=A / G-006 Q-05a (`docs/topology-same-host.md`): routing + RO INSERT/UPDATE/DELETE/DROP deny + cleanup. **Never** physical replica lag/isolation |
 | **Local TX + savepoint** | Supported | Commit / full rollback / `RELEASE SAVEPOINT` provider | B3 · `XuguSavepointReleaseSQLProvider` |
-| **XA wrapper** | Supported (happy-path) | `XuguXAConnectionWrapper` → `com.xugu.xa.XAConnectionImp`; metadata XA DS `com.xugu.xa.XADatasourceImp` | B7 commit/rollback across shards; may Assumption-skip if Atomikos/XuGu XA init fails. Prepare-then-kill evidence = **medium** ([xa-recovery-evidence.md](xa-recovery-evidence.md)); **strong** TM-log recovery **not** claimed. **XA timeout = CLOSED_AS_DEFER** (app/TM-level timeout) |
+| **XA wrapper** | Supported (happy-path) | `XuguXAConnectionWrapper` → `com.xugu.xa.XAConnectionImp`; metadata XA DS `com.xugu.xa.XADatasourceImp` | B7 commit/rollback across shards; may Assumption-skip if Atomikos/XuGu XA init fails. Prepare-then-kill evidence = **medium** ([xa-recovery-evidence.md](xa-recovery-evidence.md)); **Strong TM recovery = BLOCKED** (Q-01: post-kill `recover()` empty / no in-doubt). **XA timeout = CLOSED_AS_DEFER** (app/TM-level timeout) |
 | **Encrypt** | Supported | Column encrypt/decrypt via SS encrypt rule (no XuGu-specific encrypt SPI) | B6 AES phone column |
 | **Pagination** | Supported | Native **`LIMIT`** merge path | [pagination-decision.md](pagination-decision.md) · B5 |
 | **Batch DML** | Supported | JDBC batch insert across shards | B4 |
@@ -93,7 +93,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | True same-host read DS routing + privilege deepen | P0-2 / G-005 T3=A / G-006 Q-05a | Different-DATABASE routing + restricted read user deny/cleanup ([topology-same-host.md](topology-same-host.md)); **never** claim physical replica |
 | This support matrix | P0-3 | This document |
 | Version 5.5.3-xugu.2 + release notes with known gaps | P0-4 | This release (RELEASE-NOTES-5.5.3-xugu.2.md) |
-| XA recovery (kill TM / interrupt / timeout) | P1-1 / G-005 T2 / G-006 Q-02 | Prepare-then-kill **medium** ([xa-recovery-evidence.md](xa-recovery-evidence.md)); timeout **CLOSED_AS_DEFER** (app/TM-level); strong recover **not** proven |
+| XA recovery (kill TM / interrupt / timeout) | P1-1 / G-005 T2 / G-006 Q-01/Q-02 | Prepare-then-kill **medium**; timeout **CLOSED_AS_DEFER**; Strong recover **BLOCKED** ([xa-recovery-evidence.md](xa-recovery-evidence.md): `NO_IN_DOUBT_AFTER_TM_KILL`) |
 | Load + fault injection report | P1-2 | Not claimed |
 | Second namespace / weak second env | P1-3 | Same host only; not multi-site |
 | ExceptionMapper expansion + error-code map | P1-4 | Baseline mapper only until expanded |

@@ -72,6 +72,7 @@ If Atomikos / XuGu XA init fails, `XATransactionIT` Assumptions-skips with messa
 C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it test "-Pxa-recovery" "-Dsurefire.failIfNoSpecifiedTests=false"
 ```
 
-- IT: `com.xugudb.shardingsphere.it.xa.XARecoveryEvidenceIT` (interrupt / timeout / connection-kill)
-- Optional client JVM kill: `scripts/xa-recovery-kill-client.ps1`
-- Observations (honest shallow vs strong): [xa-recovery-evidence.md](xa-recovery-evidence.md)
+- IT: `com.xugudb.shardingsphere.it.xa.XARecoveryEvidenceIT` (interrupt / timeout / connection-kill / Strong attempt)
+- Optional client JVM kill (medium): `scripts/xa-recovery-kill-client.ps1`
+- Strong attempt (prepare → kill TM → recover+heuristic): `scripts/xa-recovery-strong.ps1`
+- Observations (honest shallow / medium / Strong BLOCKED): [xa-recovery-evidence.md](xa-recovery-evidence.md)

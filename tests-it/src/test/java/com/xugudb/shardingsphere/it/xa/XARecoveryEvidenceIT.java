@@ -29,17 +29,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * G-005 T2 / G-004 P1-1 / G-006 Q-02 — XA recovery / failure-path evidence (same-host lab).
+ * G-005 T2 / G-004 P1-1 / G-006 Q-01/Q-02 — XA recovery / failure-path evidence (same-host lab).
  *
  * <p>Covers interrupt-before-commit, XAResource timeout (CLOSED_AS_DEFER when ignored),
- * TM-side connection close around prepare, and <strong>kill/close after prepare</strong>
- * with {@code recover()} + row probe. These are shallow-to-medium client/TM paths;
- * they do <strong>not</strong> prove Atomikos TM-log replay after JVM death (see
- * {@code scripts/xa-recovery-kill-client.ps1} for AFTER_PREPARE JVM kill).
+ * TM-side connection close around prepare, kill/close after prepare with {@code recover()}
+ * + row probe, and a <strong>Strong</strong> attempt (prepare → disconnect → recover +
+ * heuristic resolve). JVM-kill Strong with Atomikos logs:
+ * {@code scripts/xa-recovery-strong.ps1}.
  *
  * <p>Q-02: XuGu {@code XAResourceImp#setTransactionTimeout} is a stub (always {@code false}/
  * {@code 0}); {@code XuguXAConnectionWrapper} exposes no alternate timeout API. Do not claim
  * RM XA timeout abort works.
+ *
+ * <p>Q-01 Strong PASS only when in-doubt Xids are recovered and heuristically resolved after
+ * TM death; otherwise acceptance is {@code BLOCKED} (test stays green with documented verdict).
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class XARecoveryEvidenceIT {
@@ -421,6 +424,126 @@ class XARecoveryEvidenceIT {
             closeQuietly(conn);
             closeQuietly(xaConn);
             BaselineSupport.dropTableQuietly(props, "jdbc.url." + DB, RAW_TABLE);
+        }
+    }
+
+    /**
+     * G-006 Q-01 Strong attempt (in-process proxy of TM death): prepare → close TM-side
+     * connections → fresh {@code recover()} → heuristic rollback/commit/forget.
+     *
+     * <p>JUnit stays green for both STRONG_PASS and STRONG_BLOCKED; acceptance docs must not
+     * claim Strong unless {@code STRONG_VERDICT=STRONG_PASS}. Full JVM-kill + Atomikos log
+     * restart is {@code scripts/xa-recovery-strong.ps1}.
+     */
+    @Test
+    @Order(5)
+    void strongTmRecoveryAfterPrepareAttempt() throws Exception {
+        Properties props = prepareSingleDb();
+        ensureRawTable(props);
+
+        XADatasourceImp xaDs = newXaDataSource(props.getProperty("jdbc.url." + DB), props);
+        XAConnection xaConn = null;
+        Connection conn = null;
+        Xid xid = newXid("strong");
+        String prepareVote = "not-prepared";
+        try {
+            xaConn = xaDs.getXAConnection();
+            XAResource xaRes = xaConn.getXAResource();
+            conn = xaConn.getConnection();
+            xaRes.start(xid, XAResource.TMNOFLAGS);
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO " + RAW_TABLE + " (ID, USER_ID, STATUS) VALUES (?, ?, ?)")) {
+                ps.setInt(1, 5001);
+                ps.setInt(2, 1);
+                ps.setString(3, "STRONG-ATTEMPT");
+                assertEquals(1, ps.executeUpdate());
+            }
+            xaRes.end(xid, XAResource.TMSUCCESS);
+            int vote = xaRes.prepare(xid);
+            prepareVote = "PREPARE_OK vote=" + vote;
+
+            try {
+                conn.close();
+            } catch (Exception ignored) {
+                // expected
+            }
+            try {
+                xaConn.close();
+            } catch (Exception ignored) {
+                // expected
+            }
+            conn = null;
+            xaConn = null;
+
+            XAConnection probe = null;
+            try {
+                probe = xaDs.getXAConnection();
+                XAResource probeRes = probe.getXAResource();
+                Xid[] recovered = safeRecover(probeRes);
+                java.util.List<String> actions = new java.util.ArrayList<String>();
+                for (Xid inDoubt : recovered) {
+                    actions.add(heuristicResolve(probeRes, inDoubt));
+                }
+                Xid[] after = safeRecover(probeRes);
+                int remaining = BaselineSupport.countOn(props, "jdbc.url." + DB, RAW_TABLE);
+
+                final boolean strongPass = recovered.length > 0 && after.length == 0 && !actions.isEmpty();
+                final String verdict = strongPass ? "STRONG_PASS" : "STRONG_BLOCKED";
+                final String reason;
+                if (strongPass) {
+                    reason = "in-doubt recovered and heuristic resolved after prepare+TM-disconnect";
+                } else if (recovered.length == 0) {
+                    reason = "NO_IN_DOUBT_AFTER_TM_KILL: recover() empty; rows=" + remaining
+                            + "; cannot demonstrate Strong recover+commit/rollback path";
+                } else {
+                    reason = "IN_DOUBT_NOT_CLEARED recoverBefore=" + recovered.length
+                            + " recoverAfter=" + after.length + " actions=" + actions;
+                }
+
+                System.out.println("[Q-01 strong] " + prepareVote
+                        + " recoverBefore=" + recovered.length
+                        + " recoverAfter=" + after.length
+                        + " remainingRows=" + remaining
+                        + " actions=" + actions
+                        + " STRONG_VERDICT=" + verdict
+                        + " reason=" + reason);
+
+                assertTrue(prepareVote.startsWith("PREPARE_OK"),
+                        "Strong attempt requires prepare success: " + prepareVote);
+                assertTrue("STRONG_PASS".equals(verdict) || "STRONG_BLOCKED".equals(verdict),
+                        "unexpected Strong verdict: " + verdict);
+                // Honest gate: BLOCKED is an acceptable observed outcome for Q-01.
+                if ("STRONG_BLOCKED".equals(verdict)) {
+                    System.out.println("[Q-01 strong] acceptance must record BLOCKED (not fake PASS); "
+                            + "see scripts/xa-recovery-strong.ps1 for JVM-kill + Atomikos log attempt");
+                }
+            } finally {
+                closeQuietly(probe);
+            }
+        } finally {
+            closeQuietly(conn);
+            closeQuietly(xaConn);
+            BaselineSupport.dropTableQuietly(props, "jdbc.url." + DB, RAW_TABLE);
+        }
+    }
+
+    private static String heuristicResolve(final XAResource xaRes, final Xid xid) {
+        try {
+            xaRes.rollback(xid);
+            return "ROLLBACK_OK";
+        } catch (XAException rbEx) {
+            try {
+                xaRes.commit(xid, false);
+                return "COMMIT_OK_AFTER_RB_FAIL=" + rbEx.errorCode;
+            } catch (XAException cEx) {
+                try {
+                    xaRes.forget(xid);
+                    return "FORGET_OK rb=" + rbEx.errorCode + " c=" + cEx.errorCode;
+                } catch (XAException fEx) {
+                    return "RESOLVE_FAIL rb=" + rbEx.errorCode + " c=" + cEx.errorCode
+                            + " f=" + fEx.errorCode;
+                }
+            }
         }
     }
 

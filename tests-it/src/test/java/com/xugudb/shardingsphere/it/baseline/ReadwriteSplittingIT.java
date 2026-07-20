@@ -346,9 +346,139 @@ class ReadwriteSplittingIT {
                 }
             } finally {
                 dropTablesOnAllDs(props);
+                assertTablesAbsentOnAllDs(props);
             }
         } finally {
             BaselineSupport.closeQuietly(dataSource);
+        }
+    }
+
+    /**
+     * G-006 Q-05a — harden L2 same-host read path beyond basic RO INSERT deny.
+     *
+     * <p>Edge / failure asserts: UPDATE+DELETE privilege deny on each read URL;
+     * denied DML leaves no rows; read0≠read1 DATABASE paths; post-drop cleanup
+     * verified. Same-host only — not physical replica / lag / HA.</p>
+     */
+    @Test
+    void sameHostReadPathFailureAndCleanup() throws Exception {
+        Properties props = prepareProps();
+        assertSameHostDistinctDatabases(props);
+        assertNotEquals(props.getProperty("jdbc.url.read0"), props.getProperty("jdbc.url.read1"),
+                "read0 and read1 must be distinct DATABASE URLs (round-robin targets)");
+
+        if (!BaselineSupport.isReadOnlyUserReady(props)) {
+            ensureTablesOnAllDs(props);
+            try {
+                seedStatus(props, "jdbc.url.read0", 55, READ_MARKER);
+                seedStatus(props, "jdbc.url.read1", 56, "READ1_ONLY");
+                assertEquals(0, countById(props, "jdbc.url.write", 55),
+                        "BLOCKED_ENV harden: read0 marker must not exist on write");
+                assertEquals(0, countById(props, "jdbc.url.write", 56),
+                        "BLOCKED_ENV harden: read1 marker must not exist on write");
+                assertEquals(1, countById(props, "jdbc.url.read0", 55));
+                assertEquals(0, countById(props, "jdbc.url.read0", 56),
+                        "BLOCKED_ENV harden: read1-only row must not appear on read0");
+                assertEquals(1, countById(props, "jdbc.url.read1", 56));
+                assertEquals(0, countById(props, "jdbc.url.read1", 55),
+                        "BLOCKED_ENV harden: read0-only row must not appear on read1");
+                System.err.println("BLOCKED_ENV: RO user unavailable for Q-05a harden; "
+                        + "passed cross-read DATABASE isolation + cleanup path. log="
+                        + props.getProperty("topology.readonly.log", ""));
+            } finally {
+                dropTablesOnAllDs(props);
+                assertTablesAbsentOnAllDs(props);
+            }
+            return;
+        }
+
+        String readUser = props.getProperty("jdbc.user.read");
+        String readPassword = props.getProperty("jdbc.password.read");
+        ensureTablesOnAllDs(props);
+        seedStatus(props, "jdbc.url.read0", 66, READ_MARKER);
+        seedStatus(props, "jdbc.url.read1", 66, READ_MARKER);
+
+        for (String urlKey : new String[]{"jdbc.url.read0", "jdbc.url.read1"}) {
+            String url = props.getProperty(urlKey);
+            try (Connection ro = DriverManager.getConnection(url, readUser, readPassword)) {
+                assertPrivilegeDenied(ro,
+                        "UPDATE " + TABLE + " SET STATUS = 'RO_UPDATE_FAIL' WHERE ID = 66",
+                        "restricted user UPDATE must fail on " + urlKey);
+                assertPrivilegeDenied(ro,
+                        "DELETE FROM " + TABLE + " WHERE ID = 66",
+                        "restricted user DELETE must fail on " + urlKey);
+                assertPrivilegeDenied(ro,
+                        "INSERT INTO " + TABLE + " (ID, STATUS) VALUES (6601, 'RO_INSERT_FAIL')",
+                        "restricted user INSERT must fail on " + urlKey);
+                assertPrivilegeDenied(ro,
+                        "DROP TABLE " + TABLE,
+                        "restricted user DROP must fail on " + urlKey);
+            }
+            // Denied DML must leave no side effects on the read DATABASE.
+            assertEquals(1, countById(props, urlKey, 66),
+                    "RO deny must not remove marker row on " + urlKey);
+            assertEquals(0, countById(props, urlKey, 6601),
+                    "failed RO INSERT must leave zero rows for id=6601 on " + urlKey);
+        }
+
+        // SS write still lands only on write DATABASE after RO deny storms.
+        DataSource dataSource = BaselineSupport.createDataSource("baseline/baseline-readwrite.yaml", props);
+        try (Connection conn = dataSource.getConnection()) {
+            try {
+                conn.setAutoCommit(true);
+                try (PreparedStatement insert = conn.prepareStatement(
+                        "INSERT INTO baseline_rw_order (id, status) VALUES (?, ?)")) {
+                    insert.setInt(1, 3);
+                    insert.setString(2, WRITE_STATUS);
+                    assertEquals(1, insert.executeUpdate());
+                }
+                assertEquals(1, countById(props, "jdbc.url.write", 3));
+                assertEquals(0, countById(props, "jdbc.url.read0", 3));
+                assertEquals(0, countById(props, "jdbc.url.read1", 3));
+
+                try (PreparedStatement select = conn.prepareStatement(
+                        "SELECT id, status FROM baseline_rw_order WHERE id = ?")) {
+                    select.setInt(1, 66);
+                    try (ResultSet rs = select.executeQuery()) {
+                        assertTrue(rs.next(), "SS SELECT must still hit read marker after RO deny");
+                        assertEquals(READ_MARKER, rs.getString(2));
+                    }
+                }
+            } finally {
+                dropTablesOnAllDs(props);
+                assertTablesAbsentOnAllDs(props);
+            }
+        } finally {
+            BaselineSupport.closeQuietly(dataSource);
+        }
+    }
+
+    private static void assertPrivilegeDenied(final Connection conn, final String sql,
+                                              final String message) {
+        SQLException denied = assertThrows(SQLException.class, () -> {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.executeUpdate();
+            }
+        }, message);
+        String msg = denied.getMessage() == null ? "" : denied.getMessage().toLowerCase(Locale.ROOT);
+        assertTrue(msg.contains("e18012") || msg.contains("privilege")
+                        || msg.contains("denied") || msg.contains("permission"),
+                message + " — expected privilege-style denial, got: " + denied.getMessage());
+    }
+
+    private static void assertTablesAbsentOnAllDs(final Properties props) {
+        for (String urlKey : new String[]{"jdbc.url.write", "jdbc.url.read0", "jdbc.url.read1"}) {
+            SQLException missing = assertThrows(SQLException.class, () -> {
+                try (Connection conn = DriverManager.getConnection(
+                        props.getProperty(urlKey), props.getProperty("jdbc.user"),
+                        props.getProperty("jdbc.password"));
+                     PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM " + TABLE);
+                     ResultSet ignored = ps.executeQuery()) {
+                    // reachable only if DROP failed to remove the table
+                }
+            }, "cleanup incomplete: " + TABLE + " still queryable on " + urlKey);
+            assertTrue(missing.getMessage() != null && !missing.getMessage().isEmpty(),
+                    "cleanup missing-table error should carry a message on " + urlKey);
         }
     }
 

@@ -39,9 +39,10 @@ Each B1–B7 class has ≥3 `@Test` methods: happy-path, boundary/failure, concu
 ### B2 readwrite limits (P0-2 / G-005 T3=A)
 
 - Topology: **same XuGu host**, `write_ds` → `baseline_write`, `read_ds_*` → `baseline_read0` / `baseline_read1` (different DATABASE, not a physical replica).
-- Privilege deepen (T3=A): read DS prefer restricted user `ss_ro_reader` (`GRANT SELECT ANY TABLE` only; INSERT must fail). See [topology-same-host.md](topology-same-host.md).
+- Privilege deepen (T3=A / G-006 Q-05a): read DS prefer restricted user `ss_ro_reader` (`GRANT SELECT ANY TABLE` only; INSERT/UPDATE/DELETE/DROP must fail; cleanup verified). See [topology-same-host.md](topology-same-host.md).
 - Routing asserts via JDBC URL path + row presence on write vs read DATABASE (sql-show remains enabled in YAML for manual log inspection).
 - Do **not** claim replica lag, streaming replication, or physical read-only replica isolation from these ITs.
+- Q-05b dual work-node: **BLOCKED_ENV** without a second URL (non-blocking).
 
 ---
 
@@ -50,7 +51,7 @@ Each B1–B7 class has ≥3 `@Test` methods: happy-path, boundary/failure, concu
 | ID | Class | YAML | `@Test` methods | Asserts |
 |---|---|---|---|---|
 | B1 | `OrderDbTableShardingIT` | `baseline/baseline-order-sharding.yaml` | `placeOrderQueryAndJoin`; `queryMissingOrderReturnsEmptyAndDuplicateKeyFails`; `concurrentPlaceOrdersSmoke` | DB+table sharding on `baseline_order` / `baseline_order_item`; place order + item; query by `order_id`; empty miss + duplicate PK; 8-thread insert/select |
-| B2 | `ReadwriteSplittingIT` | `baseline/baseline-readwrite.yaml` | `writeThenReadSmoke`; `selectMissingIdReturnsEmptyAndDuplicateKeyFails`; `concurrentWriteReadSmoke`; `sameHostReadDsRoutingIsolation`; `sameHostReadOnlyUserDeepen` | Same-host different DATABASE + T3=A restricted read user (INSERT deny / SELECT ok on read URLs; SS read DS uses `jdbc.user.read`). **Not** physical replica lag/isolation |
+| B2 | `ReadwriteSplittingIT` | `baseline/baseline-readwrite.yaml` | `writeThenReadSmoke`; `selectMissingIdReturnsEmptyAndDuplicateKeyFails`; `concurrentWriteReadSmoke`; `sameHostReadDsRoutingIsolation`; `sameHostReadOnlyUserDeepen`; `sameHostReadPathFailureAndCleanup` | Same-host different DATABASE + T3=A/Q-05a RO deny (INSERT/UPDATE/DELETE/DROP) + cleanup + routing. **Not** physical replica lag/isolation |
 | B3 | `LocalTransactionSavepointIT` | `baseline/baseline-sharding-db.yaml` | `rollbackToSavepointKeepsEarlierRows`; `fullRollbackLeavesNoRows`; `concurrentLocalTxSmoke` | savepoint keep; full rollback → 0 rows; 8-thread local commit |
 | B4 | `BatchInsertIT` | `baseline/baseline-sharding-db.yaml` | `batchInsertAcrossShards`; `emptyBatchIsNoOpAndDuplicateKeyInBatchFails`; `concurrentBatchInsertSmoke` | batch ~20 rows 10/10; empty batch + duplicate batch fails; 8×2 concurrent batch |
 | B5 | `PaginationListIT` | `baseline/baseline-sharding-db.yaml` | `limitReturnsAtMostFiveRows`; `limitOnEmptyTableReturnsZero`; `concurrentPaginationSmoke` | `LIMIT 5` ≤5; empty LIMIT → 0; 8-thread concurrent LIMIT 3 |

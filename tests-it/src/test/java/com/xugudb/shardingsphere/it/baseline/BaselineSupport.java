@@ -20,29 +20,59 @@ import java.util.Properties;
 
 /**
  * Shared fixture for baseline IT scenarios (compatiblemode=NONE).
+ *
+ * <p>Default lab props: {@code it-xugu.properties}. Alternate same-host namespace (G-004 P1-3 env2):
+ * system property {@code it.xugu.properties=it-xugu-env2.properties} (Maven {@code -Penv2} /
+ * {@code -Pit-xugu-env2}). Optional overrides: {@code db.ds0}/{@code db.ds1}/{@code db.write}/
+ * {@code db.read0}/{@code db.read1}.</p>
  */
 public final class BaselineSupport {
 
-    public static final String DB0 = "shard_ds0";
+    public static final String DEFAULT_DB0 = "shard_ds0";
 
-    public static final String DB1 = "shard_ds1";
+    public static final String DEFAULT_DB1 = "shard_ds1";
 
-    public static final String DB_WRITE = "baseline_write";
+    public static final String DEFAULT_DB_WRITE = "baseline_write";
 
-    public static final String DB_READ0 = "baseline_read0";
+    public static final String DEFAULT_DB_READ0 = "baseline_read0";
 
-    public static final String DB_READ1 = "baseline_read1";
+    public static final String DEFAULT_DB_READ1 = "baseline_read1";
+
+    /** Active DATABASE name for ds0 (mutable when env2 props override {@code db.ds0}). */
+    public static String DB0 = DEFAULT_DB0;
+
+    public static String DB1 = DEFAULT_DB1;
+
+    public static String DB_WRITE = DEFAULT_DB_WRITE;
+
+    public static String DB_READ0 = DEFAULT_DB_READ0;
+
+    public static String DB_READ1 = DEFAULT_DB_READ1;
 
     private BaselineSupport() {
     }
 
     public static Properties loadProps() throws Exception {
         Properties props = new Properties();
-        try (InputStream in = BaselineSupport.class.getClassLoader().getResourceAsStream("it-xugu.properties")) {
-            Assumptions.assumeTrue(in != null, "it-xugu.properties missing on classpath");
+        String resource = System.getProperty("it.xugu.properties", "it-xugu.properties");
+        try (InputStream in = BaselineSupport.class.getClassLoader().getResourceAsStream(resource)) {
+            Assumptions.assumeTrue(in != null, resource + " missing on classpath");
             props.load(in);
         }
+        applyDatabaseNames(props);
         return props;
+    }
+
+    /**
+     * Apply optional {@code db.*} overrides so env2 can use alternate DATABASE names
+     * on the same XuGu host without colliding with the primary lab namespace.
+     */
+    static void applyDatabaseNames(final Properties props) {
+        DB0 = props.getProperty("db.ds0", DEFAULT_DB0);
+        DB1 = props.getProperty("db.ds1", DEFAULT_DB1);
+        DB_WRITE = props.getProperty("db.write", DEFAULT_DB_WRITE);
+        DB_READ0 = props.getProperty("db.read0", DEFAULT_DB_READ0);
+        DB_READ1 = props.getProperty("db.read1", DEFAULT_DB_READ1);
     }
 
     public static void assumeReachable(final Properties props) throws Exception {

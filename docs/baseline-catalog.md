@@ -22,6 +22,14 @@ All IT including baseline (profile `it-xugu`):
 C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it -am test "-Pit-xugu" "-Dsurefire.failIfNoSpecifiedTests=false"
 ```
 
+Same-host alternate DATABASE namespace (G-004 P1-3 env2):
+
+```powershell
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it test "-Penv2" "-Dsurefire.failIfNoSpecifiedTests=false"
+```
+
+Uses `it-xugu-env2.properties` (`env2_shard_ds*` / `env2_baseline_*`). Results archive: [env2-baseline-result.md](env2-baseline-result.md). **Not** a second machine.
+
 Unreachable XuGu host → JUnit Assumption **SKIP** (not failure).
 
 Shared fixture: `com.xugudb.shardingsphere.it.baseline.BaselineSupport`.

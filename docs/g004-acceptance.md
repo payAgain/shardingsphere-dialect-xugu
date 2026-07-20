@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-20  
 **Repo:** `shardingsphere-dialect-xugu`  
-**HEAD:** `f79af9e`  
+**HEAD:** `d730524`（功能 tip `f79af9e`）  
 **Version:** `5.5.3-xugu.2`  
 **Spec:** `sharding/docs/superpowers/specs/2026-07-20-xugu-production-hardening-p0-p1-design.md`  
 **Plan:** `sharding/docs/superpowers/plans/2026-07-20-xugu-production-hardening-p0-p1.md`

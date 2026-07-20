@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.xugudb.shardingsphere</groupId>
         <artifactId>shardingsphere-dialect-xugu-parent</artifactId>
-        <version>5.5.3-xugu-SNAPSHOT</version>
+        <version>5.5.3-xugu.1</version>
     </parent>
     <artifactId>shardingsphere-database-connector-xugu</artifactId>
     <name>shardingsphere-database-connector-xugu</name>

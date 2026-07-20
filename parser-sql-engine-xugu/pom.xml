@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.xugudb.shardingsphere</groupId>
         <artifactId>shardingsphere-dialect-xugu-parent</artifactId>
-        <version>5.5.3-xugu-SNAPSHOT</version>
+        <version>5.5.3-xugu.1</version>
     </parent>
     <artifactId>shardingsphere-parser-sql-engine-xugu</artifactId>
     <name>shardingsphere-parser-sql-engine-xugu</name>

@@ -55,3 +55,13 @@ XuGu stores unquoted identifiers as **UPPER_CASE**. Logic tables use lowercase; 
 ## B7 SKIP notes
 
 If Atomikos / XuGu XA init fails, `XATransactionIT` Assumptions-skips with message prefix `XA DataSource init failed` or `XA commit path failed`. Dependencies: `shardingsphere-transaction-xa-atomikos` (+ Atomikos transitive). XA driver class from dialect metadata: `com.xugu.xa.XADatasourceImp`.
+
+## P1-1 XA recovery evidence (separate profile)
+
+```powershell
+C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it test "-Pxa-recovery" "-Dsurefire.failIfNoSpecifiedTests=false"
+```
+
+- IT: `com.xugudb.shardingsphere.it.xa.XARecoveryEvidenceIT` (interrupt / timeout / connection-kill)
+- Optional client JVM kill: `scripts/xa-recovery-kill-client.ps1`
+- Observations (honest shallow vs strong): [xa-recovery-evidence.md](xa-recovery-evidence.md)

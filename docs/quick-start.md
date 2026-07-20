@@ -1,4 +1,4 @@
-# Quick Start (≈30 minutes) — ShardingSphere XuGu dialect `5.5.3-xugu.1`
+# Quick Start (≈30 minutes) — ShardingSphere XuGu dialect `5.5.3-xugu.2`
 
 Goal: install the dialect into the local Maven repo, wire a dual-datasource sharding app (or run the project IT), and verify CRUD under **`compatiblemode=NONE` only**.
 
@@ -32,7 +32,7 @@ Published locally (among others):
 
 | Coordinate | Version |
 |---|---|
-| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | **`5.5.3-xugu.1`** |
+| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | **`5.5.3-xugu.2`** |
 | Upstream `org.apache.shardingsphere:shardingsphere-jdbc` | **`5.5.3`** (unchanged) |
 
 ## 3. Add dependencies to your app
@@ -47,7 +47,7 @@ Published locally (among others):
   <dependency>
     <groupId>com.xugudb.shardingsphere</groupId>
     <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
-    <version>5.5.3-xugu.1</version>
+    <version>5.5.3-xugu.2</version>
   </dependency>
   <dependency>
     <groupId>com.xugudb</groupId>

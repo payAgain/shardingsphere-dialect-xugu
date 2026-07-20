@@ -1,7 +1,7 @@
 # XuGu × ShardingSphere Production Support Matrix
 
 > **Audience:** consumers evaluating dialect readiness for general production  
-> **Release target:** `5.5.3-xugu.2` (prep; current published local coordinate remains `5.5.3-xugu.1` until P0-4 bump)  
+> **Release:** 5.5.3-xugu.2 · notes: [RELEASE-NOTES-5.5.3-xugu.2.md](RELEASE-NOTES-5.5.3-xugu.2.md)  
 > **Upstream:** Apache ShardingSphere JDBC `5.5.3`  
 > **Dialect:** XuGu native JDBC (`getDatabaseType() == "XuGu"`)  
 > **Date:** 2026-07-20  
@@ -87,9 +87,9 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | Gap | Goal item | Current stance |
 |---|---|---|
 | Boundary / failure / concurrency per scenario | P0-1 | In progress / catalog lists ≥3 tests per B*; keep evidence current |
-| True same-host read DS routing asserts | P0-2 | Required before claiming isolated read routing; **never** claim physical replica |
+| True same-host read DS routing asserts | P0-2 | Covered by B2 same-host different-DATABASE asserts; **never** claim physical replica |
 | This support matrix | P0-3 | This document |
-| Version `5.5.3-xugu.2` + release notes with known gaps | P0-4 | Pending version bump |
+| Version 5.5.3-xugu.2 + release notes with known gaps | P0-4 | This release (RELEASE-NOTES-5.5.3-xugu.2.md) |
 | XA recovery (kill TM / interrupt / timeout) | P1-1 | Not claimed until evidence doc |
 | Load + fault injection report | P1-2 | Not claimed |
 | Second namespace / weak second env | P1-3 | Same host only; not multi-site |
@@ -120,4 +120,4 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | **Supported** | JDBC dialect · sharding · same-host readwrite (topology caveats) · local TX+savepoint · XA wrapper (happy-path) · encrypt · LIMIT pagination · batch · federation stubs · baseline ExceptionMapper |
 | **NOT supported** | Proxy · MySQL/Oracle/PG compat modes · multi-machine / physical replica · MySQL trunk fallback |
 | **DEFER** | PrivilegeChecker · SHOW DAL merger · full PL/SQL parser |
-| **Hardening open** | P0-2 routing evidence · P0-4 xugu.2 notes · P1-1..P1-4 |
+| **Hardening open** | P1-1..P1-4 (XA recovery · load/fault · env2 · ExceptionMapper map) |

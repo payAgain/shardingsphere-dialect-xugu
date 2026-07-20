@@ -29,13 +29,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * G-005 T2 / G-004 P1-1 — XA recovery / failure-path evidence (same-host lab).
+ * G-005 T2 / G-004 P1-1 / G-006 Q-02 — XA recovery / failure-path evidence (same-host lab).
  *
- * <p>Covers interrupt-before-commit, XAResource timeout (honest DEFER if ignored),
+ * <p>Covers interrupt-before-commit, XAResource timeout (CLOSED_AS_DEFER when ignored),
  * TM-side connection close around prepare, and <strong>kill/close after prepare</strong>
  * with {@code recover()} + row probe. These are shallow-to-medium client/TM paths;
  * they do <strong>not</strong> prove Atomikos TM-log replay after JVM death (see
  * {@code scripts/xa-recovery-kill-client.ps1} for AFTER_PREPARE JVM kill).
+ *
+ * <p>Q-02: XuGu {@code XAResourceImp#setTransactionTimeout} is a stub (always {@code false}/
+ * {@code 0}); {@code XuguXAConnectionWrapper} exposes no alternate timeout API. Do not claim
+ * RM XA timeout abort works.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class XARecoveryEvidenceIT {
@@ -144,8 +148,12 @@ class XARecoveryEvidenceIT {
         try {
             xaConn = xaDs.getXAConnection();
             xaRes = xaConn.getXAResource();
+            System.out.println("[Q-02 timeout] xaResClass=" + xaRes.getClass().getName()
+                    + " wrapperAlt=none (XuguXAConnectionWrapper has no timeout API; same XAResourceImp)");
+
             boolean timeoutAccepted = xaRes.setTransactionTimeout(2);
             int reportedTimeout = xaRes.getTransactionTimeout();
+            // Stub drivers return false/0 — still "usable" for evidence (CLOSED_AS_DEFER).
             Assumptions.assumeTrue(timeoutAccepted || reportedTimeout >= 0,
                     "XAResource.setTransactionTimeout not usable on this driver");
 
@@ -177,18 +185,34 @@ class XARecoveryEvidenceIT {
             }
             remaining = BaselineSupport.countOn(props, "jdbc.url." + DB, RAW_TABLE);
             Xid[] recovered = safeRecover(xaRes);
-            System.out.println("[T2 timeout] outcome=" + outcome + " remainingRows=" + remaining
+            System.out.println("[Q-02 timeout] outcome=" + outcome + " remainingRows=" + remaining
                     + " recover=" + Arrays.toString(recovered));
-            // Evidence probe: must observe a concrete outcome. XuGu may ignore timeout
-            // (COMMITTED_DESPITE_TIMEOUT + remainingRows>0) — that is DEFER, not PASS.
+            // Evidence probe: must observe a concrete outcome. XuGu stub ignores timeout
+            // (COMMITTED_DESPITE_TIMEOUT + remainingRows>0) — CLOSED_AS_DEFER, not RM abort PASS.
             assertTrue(outcome.startsWith("XAException") || outcome.startsWith("COMMITTED"),
                     "timeout path produced no observable outcome: " + outcome);
-            if (outcome.startsWith("COMMITTED_DESPITE_TIMEOUT") || remaining > 0) {
-                System.out.println("[T2 timeout] DEFER: RM ignored setTransactionTimeout(2); "
-                        + "ops workaround = application-level timeout / cancel before 2PC; "
-                        + "do NOT claim XA timeout recovery PASS");
+
+            final boolean ignoredByRm = outcome.startsWith("COMMITTED_DESPITE_TIMEOUT")
+                    || (!timeoutAccepted && reportedTimeout == 0 && remaining > 0);
+            final String disposition = ignoredByRm ? "CLOSED_AS_DEFER" : "RM_TIMEOUT_ABORT_OBSERVED";
+            System.out.println("[Q-02 timeout] disposition=" + disposition
+                    + " setAccepted=" + timeoutAccepted + " timeoutSec=" + reportedTimeout);
+
+            if (ignoredByRm) {
+                assertTrue(!timeoutAccepted && reportedTimeout == 0,
+                        "XuGu stub expected setAccepted=false timeoutSec=0; got setAccepted="
+                                + timeoutAccepted + " timeoutSec=" + reportedTimeout);
+                assertTrue(remaining > 0,
+                        "CLOSED_AS_DEFER requires durable row after ignored timeout (got remaining="
+                                + remaining + ")");
+                System.out.println("[Q-02 timeout] CLOSED_AS_DEFER: RM ignored setTransactionTimeout(2); "
+                        + "ops workaround = application/TM-level timeout / cancel before 2PC; "
+                        + "do NOT claim RM XA timeout abort works");
             } else {
-                System.out.println("[T2 timeout] RM aborted after timeout window (observable)");
+                assertTrue(outcome.startsWith("XAException") || remaining == 0,
+                        "RM_TIMEOUT_ABORT_OBSERVED requires abort evidence: " + outcome
+                                + " remaining=" + remaining);
+                System.out.println("[Q-02 timeout] RM aborted after timeout window (unexpected PASS path)");
             }
         } finally {
             closeQuietly(conn);

@@ -14,7 +14,7 @@ It does **not** claim financial-grade XA crash recovery, Atomikos log replay aft
 | **Medium** | Failure injected **at/after prepare**; residual state / `recover()` probed; disposition classified (clean / in-doubt / durable-row) |
 | **Strong** | TM JVM crash **after prepare** + restart recovers/commits/rolls back via TM log + RM `recover()` heuristic complete — **not proven here** |
 
-**Overall verdict (G-005 T2 lab run):** evidence is **medium** for prepare-then-kill (IT close + JVM kill both leave `CLEAN_ROLLBACK_OR_ABORT`). Timeout remains **DEFER** (driver ignores `setTransactionTimeout`). Strong Atomikos/XuGu heuristic recovery remains **NOT proven**.
+**Overall verdict (G-005 T2 + G-006 Q-02):** evidence is **medium** for prepare-then-kill (IT close + JVM kill both leave `CLEAN_ROLLBACK_OR_ABORT`). Timeout gap **CLOSED_AS_DEFER** (driver stub ignores `setTransactionTimeout`; no wrapper alternative). Strong Atomikos/XuGu heuristic recovery remains **NOT proven**.
 
 ---
 
@@ -32,7 +32,7 @@ Class: `com.xugudb.shardingsphere.it.xa.XARecoveryEvidenceIT`
 | `#` | Method | Failure mode | Strength target |
 |---|---|---|---|
 | 1 | `interruptMidXaBeforeCommitLeavesNoRows` | Interrupt worker mid-XA (after INSERT, before commit) on ShardingSphere+Atomikos | Shallow |
-| 2 | `xaResourceTimeoutPathIsObservable` | Raw `XAResource.setTransactionTimeout(2)` then sleep past window | DEFER if ignored |
+| 2 | `xaResourceTimeoutPathIsObservable` | Raw `XAResource.setTransactionTimeout(2)` then sleep past window; wrapper has no alt API | **CLOSED_AS_DEFER** if ignored |
 | 3 | `connectionKillDuringPrepareLeavesRecoverableOrCleanState` | Close JDBC + `XAConnection` **then** `prepare`/`commit` | Weak-medium |
 | 4 | `killAfterPrepareLeavesRecoverableOrCleanState` | `prepare` OK → close conn/XAConn → commit attempt → `recover()` + rows | Medium |
 
@@ -53,28 +53,30 @@ Flow: start → INSERT → end → **prepare** → `READY_FOR_KILL phase=AFTER_P
 | Path | Result | Observation summary | What recovered | Heuristic / leftover | NOT proven |
 |---|---|---|---|---|---|
 | Interrupt mid-XA | **PASS (shallow)** | `InterruptedException`; Atomikos `XAResource.rollback` both shards; `counts ds0=0 ds1=0` | App/TM rollback of active branch | None | Crash recovery / prepare-phase interrupt |
-| XA timeout | **DEFER** | `setTransactionTimeout(2)` → `setAccepted=false`, `timeoutSec=0`; still `COMMITTED_DESPITE_TIMEOUT vote=0`; `remainingRows=1`; `recover=[]` | Nothing — timeout ignored | Durable row until IT cleanup | Timeout-enforced abort / recovery |
+| XA timeout | **CLOSED_AS_DEFER** | Re-probe G-006 Q-02: `XAResourceImp` bytecode stub (`setTransactionTimeout`→`false`, `getTransactionTimeout`→`0`); `XuguXAConnectionWrapper` has **no** timeout API. Lab: `COMMITTED_DESPITE_TIMEOUT vote=0`; `remainingRows=1`; `recover=[]` | Nothing — timeout ignored | Durable row until IT cleanup | RM timeout-enforced abort / recovery |
 | Conn close before prepare | **PASS (weak-medium)** | Close then prepare: `PREPARE_OK_AFTER_CLOSE vote=0; COMMIT_XAEX=-7`; `remainingRows=0`; `recoverCount=0` | No durable row after failed commit | No in-doubt Xid via `recover()` | Heuristic complete/forget |
 | Kill/close **after prepare** (IT) | **PASS (medium)** | `PREPARE_OK vote=0`; post-close `COMMIT_XAEX=-7; ROLLBACK_XAEX=-7`; `remainingRows=0`; `recoverCount=0`; `disposition=CLEAN_ROLLBACK_OR_ABORT` | RM cleaned branch after TM disconnect post-prepare (no durable row) | No in-doubt via `recover()` | Heuristic commit/rollback/forget; TM-log replay |
 | Client JVM kill **after prepare** (script) | **PASS (medium)** | `PREPARED vote=0` → `READY_FOR_KILL phase=AFTER_PREPARE` → kill; `PROBE_COUNT=0 PROBE_RECOVER=0 disposition=CLEAN_ROLLBACK_OR_ABORT` | Disconnect after prepare → no durable row / empty recover | None visible | Strong TM restart recovery from Atomikos log |
 
-### Timeout disposition (DEFER — ops workaround)
+### Timeout disposition (**CLOSED_AS_DEFER** — ops workaround)
 
-XuGu `XAResourceImp` on this lab **does not honor** `setTransactionTimeout`. Do **not** claim XA timeout recovery PASS.
+**G-006 Q-02 re-probe (2026-07-20):** XuGu JDBC `12.3.6` `com.xugu.xa.XAResourceImp` implements `setTransactionTimeout` / `getTransactionTimeout` as **no-op stubs** (always `false` / `0`). `XuguXAConnectionWrapper` only constructs `XAConnectionImp` — **no alternate timeout surface**. Lab IT still commits after sleeping past a 2s window (`COMMITTED_DESPITE_TIMEOUT`). Gap closed as **CLOSED_AS_DEFER** — do **not** claim RM XA timeout abort works.
 
-**Ops workaround (application-level):** enforce transaction / statement deadlines in the application or TM wrapper **before** entering 2PC (cancel / rollback active branch; do not rely on RM XA timeout). Documented also in [support-matrix.md](support-matrix.md).
+**Ops workaround (application / TM-level):** enforce transaction / statement deadlines in the application or TM **before** entering 2PC (cancel / rollback active branch; optional `Statement.setQueryTimeout` for statement-bound work). Do **not** rely on RM `XAResource.setTransactionTimeout`. Documented also in [support-matrix.md](support-matrix.md).
 
 ### Run metadata
 
 - Host: `192.168.2.239:5138` / `SYSDBA` / `compatiblemode=NONE`
-- IT: `mvn -pl tests-it test "-Pxa-recovery"` → **Tests run: 4, Failures: 0**
+- IT: `mvn -pl tests-it test "-Pxa-recovery"` → **Tests run: 4, Failures: 0** (re-run under G-006 Q-02)
 - Script log: `tests-it/logs/xa-recovery-kill-client.log` (+ probe log)
 - Key stdout excerpts:
 
 ```text
 [T2 interrupt] interruptedFlag=false workerError=InterruptedException: null counts ds0=0 ds1=0
-[T2 timeout] outcome=COMMITTED_DESPITE_TIMEOUT vote=0 setAccepted=false timeoutSec=0 remainingRows=1 recover=[]
-[T2 timeout] DEFER: RM ignored setTransactionTimeout(2); ops workaround = application-level timeout / cancel before 2PC
+[Q-02 timeout] xaResClass=com.xugu.xa.XAResourceImp wrapperAlt=none (XuguXAConnectionWrapper has no timeout API; same XAResourceImp)
+[Q-02 timeout] outcome=COMMITTED_DESPITE_TIMEOUT vote=0 setAccepted=false timeoutSec=0 remainingRows=1 recover=[]
+[Q-02 timeout] disposition=CLOSED_AS_DEFER setAccepted=false timeoutSec=0
+[Q-02 timeout] CLOSED_AS_DEFER: RM ignored setTransactionTimeout(2); ops workaround = application/TM-level timeout / cancel before 2PC; do NOT claim RM XA timeout abort works
 [T2 conn-kill-before-prepare] prepareOutcome=PREPARE_OK_AFTER_CLOSE vote=0; COMMIT_XAEX=-7 remainingRows=0 recoverCount=0 recover=[]
 [T2 kill-after-prepare] PREPARE_OK vote=0 postClose=COMMIT_XAEX=-7; ROLLBACK_XAEX=-7 remainingRows=0 recoverCount=0 recover=[] disposition=CLEAN_ROLLBACK_OR_ABORT
 PREPARED vote=0 ...
@@ -87,7 +89,7 @@ PROBE_COUNT=0 PROBE_RECOVER=0 detail=startScan=0 endScan=0 disposition=CLEAN_ROL
 ## Interpretation
 
 - **Interrupt → 0 rows** proves ShardingSphere/Atomikos rollback wiring on thread interrupt **before commit**. Shallow only.
-- **Timeout commits anyway** (`setAccepted=false` / `timeoutSec=0`): **DEFER** — use app-level timeout; do not claim RM XA timeout recovery.
+- **Timeout commits anyway** (`setAccepted=false` / `timeoutSec=0`): **CLOSED_AS_DEFER** — use app/TM-level timeout; do not claim RM XA timeout abort.
 - **Close-then-prepare** still prepared (`vote=0`) but commit failed (`XAER_RMFAIL` / `-7`) with **0 rows** and empty `recover()`.
 - **Prepare-then-kill/close** (IT + JVM script) is the upgraded T2 path: prepare succeeds (`vote=0`), then TM/client death; probe shows **CLEAN_ROLLBACK_OR_ABORT** (no durable row, no in-doubt Xid). This is **medium** evidence that the RM does not leave a visible prepared residue after client death — **not** strong proof of TM-log-driven recovery or heuristic complete/forget.
 
@@ -99,4 +101,4 @@ PROBE_COUNT=0 PROBE_RECOVER=0 detail=startScan=0 endScan=0 disposition=CLEAN_ROL
 2. XuGu `recover()` returning in-doubt Xids that are then `commit`/`rollback`/`forget`  
 3. Multi-shard heuristic mixed outcomes  
 4. Server-side process kill / RM crash recovery  
-5. Production SLA for XA timeout (DEFER — use app-level timeout)
+5. Production SLA for XA RM timeout (CLOSED_AS_DEFER — use app/TM-level timeout)

@@ -1,0 +1,47 @@
+# B2: readwrite-splitting smoke (3 logical DS; may share one physical DB for IT)
+databaseName: baseline_rw_db
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  write_ds:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.write}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+  read_ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.read0}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+  read_ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.read1}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+
+rules:
+- !READWRITE_SPLITTING
+  dataSourceGroups:
+    readwrite_ds:
+      writeDataSourceName: write_ds
+      readDataSourceNames:
+        - read_ds_0
+        - read_ds_1
+      transactionalReadQueryStrategy: PRIMARY
+      loadBalancerName: round_robin
+  loadBalancers:
+    round_robin:
+      type: ROUND_ROBIN
+- !SINGLE
+  tables:
+    - "*.*"
+
+props:
+  sql-show: true

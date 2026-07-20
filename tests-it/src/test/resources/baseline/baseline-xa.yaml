@@ -1,0 +1,45 @@
+# B7: XA transaction across two shards
+databaseName: baseline_xa_db
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.ds0}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.ds1}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+
+transaction:
+  defaultType: XA
+  providerType: Atomikos
+
+rules:
+- !SHARDING
+  tables:
+    baseline_xa_order:
+      actualDataNodes: ds_${0..1}.BASELINE_XA_ORDER
+      databaseStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: database_inline
+      tableStrategy:
+        none:
+  shardingAlgorithms:
+    database_inline:
+      type: INLINE
+      props:
+        algorithm-expression: ds_${user_id % 2}
+
+props:
+  sql-show: true

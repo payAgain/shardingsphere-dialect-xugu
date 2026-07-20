@@ -1,0 +1,37 @@
+# B6: encrypt column on phone
+databaseName: baseline_encrypt_db
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.ds0}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+
+rules:
+- !ENCRYPT
+  tables:
+    baseline_user:
+      columns:
+        phone:
+          cipher:
+            name: phone_cipher
+            encryptorName: aes_encryptor
+  encryptors:
+    aes_encryptor:
+      type: AES
+      props:
+        aes-key-value: 123456abc
+        digest-algorithm-name: SHA-1
+- !SINGLE
+  tables:
+    - "*.*"
+
+props:
+  sql-show: true

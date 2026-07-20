@@ -15,6 +15,7 @@
         <module>infra-binder-xugu</module>
         <module>infra-route-xugu</module>
         <module>infra-rewrite-xugu</module>
+        <module>sharding-dialect-xugu</module>
         <module>jdbc-dialect-xugu</module>
         <module>tests-it</module>
     </modules>

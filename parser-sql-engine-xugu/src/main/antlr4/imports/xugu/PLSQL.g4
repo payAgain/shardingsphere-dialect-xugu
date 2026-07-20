@@ -20,11 +20,11 @@ grammar PLSQL;
 import Keyword, BaseRule, DDLStatement, DMLStatement, TCLStatement;
 
 call
-    : CALL
+    : CALL (schemaName DOT_)? procedureName (LP_ (expr (COMMA_ expr)*)? RP_)?
     ;
 
 alterProcedure
-    : ALTER PROCEDURE (schemaName DOT_)? procedureName (procedureCompileClause | (EDITIONABLE | NONEDITIONABLE))
+    : ALTER PROCEDURE (schemaName DOT_)? procedureName (procedureCompileClause | RECOMPILE | (EDITIONABLE | NONEDITIONABLE))
     ;
 
 procedureCompileClause
@@ -54,6 +54,32 @@ createFunction
 
 createTrigger
     : CREATE (OR REPLACE)? (EDITIONABLE | NONEDITIONABLE)? TRIGGER plsqlTriggerSource
+    ;
+
+// Package DDL routed as createMacro so SQLVisitorRule.CREATE_MACRO accepts the context
+// (SS 5.5.3 core has DROP/ALTER_PACKAGE but no CREATE_PACKAGE enum constant).
+createMacro
+    : createPackage
+    | createPackageBody
+    ;
+
+// Minimal package DDL accepted by XuGu lab (compatiblemode=NONE): at least one item required.
+createPackage
+    : CREATE (OR REPLACE)? (EDITIONABLE | NONEDITIONABLE)? PACKAGE packageName (AS | IS) packageItemDeclaration+ END packageName? SEMI_?
+    ;
+
+createPackageBody
+    : CREATE (OR REPLACE)? (EDITIONABLE | NONEDITIONABLE)? PACKAGE BODY packageName (AS | IS) packageBodyItem+ END packageName? SEMI_?
+    ;
+
+packageItemDeclaration
+    : PROCEDURE procedureName (LP_ parameterDeclaration (COMMA_ parameterDeclaration)* RP_)? SEMI_
+    | FUNCTION function (LP_ parameterDeclaration (COMMA_ parameterDeclaration)* RP_)? returnDateType SEMI_
+    ;
+
+packageBodyItem
+    : PROCEDURE procedureName (LP_ parameterDeclaration (COMMA_ parameterDeclaration)* RP_)? (IS | AS) (callSpec | declareSection? body)
+    | FUNCTION function (LP_ parameterDeclaration (COMMA_ parameterDeclaration)* RP_)? returnDateType (IS | AS) (callSpec | declareSection? body)
     ;
 
 plsqlFunctionSource

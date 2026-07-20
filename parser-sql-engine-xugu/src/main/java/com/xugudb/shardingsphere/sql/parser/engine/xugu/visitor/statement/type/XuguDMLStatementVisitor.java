@@ -24,6 +24,7 @@ import org.apache.shardingsphere.sql.parser.api.visitor.statement.type.DMLStatem
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.AliasContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.AssignmentValueContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.AssignmentValuesContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CallContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CellAssignmentContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CollectionExprContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.ColumnNameContext;
@@ -187,6 +188,7 @@ import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SubqueryTableSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableSegment;
+import org.apache.shardingsphere.sql.parser.statement.core.statement.type.dml.CallStatement;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.type.dml.DeleteStatement;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.type.dml.InsertStatement;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.type.dml.MergeStatement;
@@ -1569,5 +1571,20 @@ public final class XuguDMLStatementVisitor extends XuguStatementVisitor implemen
     public ASTNode visitDeleteWhereClause(final DeleteWhereClauseContext ctx) {
         ASTNode segment = visit(ctx.whereClause().expr());
         return new WhereSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), (ExpressionSegment) segment);
+    }
+    
+    @Override
+    public ASTNode visitCall(final CallContext ctx) {
+        String procedureName = ctx.procedureName().getText();
+        if (null != ctx.schemaName()) {
+            procedureName = ctx.schemaName().getText() + "." + procedureName;
+        }
+        List<ExpressionSegment> parameters = new ArrayList<>();
+        if (null != ctx.expr()) {
+            for (ExprContext each : ctx.expr()) {
+                parameters.add((ExpressionSegment) visit(each));
+            }
+        }
+        return new CallStatement(getDatabaseType(), procedureName, parameters);
     }
 }

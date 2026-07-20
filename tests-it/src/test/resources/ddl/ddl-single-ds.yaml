@@ -1,0 +1,24 @@
+# Cold DDL + PL/SQL single datasource — isolated ddl_plsql_ds DATABASE
+databaseName: ddl_plsql_logic
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.ddl_plsql}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+
+rules:
+- !SINGLE
+  tables:
+    - "*.*"
+  defaultDataSource: ds_0
+
+props:
+  sql-show: true

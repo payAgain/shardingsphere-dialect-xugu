@@ -213,5 +213,23 @@
                 </plugins>
             </build>
         </profile>
+        <!-- G-006 Q-04: cold DDL + PL/SQL surface -->
+        <profile>
+            <id>ddl-plsql</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludes combine.self="override"/>
+                            <includes>
+                                <include>**/ddl/**/*IT.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

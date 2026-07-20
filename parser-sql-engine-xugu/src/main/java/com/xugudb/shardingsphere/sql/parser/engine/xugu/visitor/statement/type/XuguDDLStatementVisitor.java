@@ -97,6 +97,9 @@ import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreateMa
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreateOperatorContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreateOutlineContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreatePFileContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreateMacroContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreatePackageBodyContext;
+import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreatePackageContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreateProcedureContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreateProfileContext;
 import com.xugudb.shardingsphere.sql.parser.autogen.XuguStatementParser.CreateRelationalTableClauseContext;
@@ -337,6 +340,8 @@ import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.lockdown.XuguDrop
 import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.outline.XuguAlterOutlineStatement;
 import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.outline.XuguCreateOutlineStatement;
 import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.outline.XuguDropOutlineStatement;
+import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.pkg.XuguCreatePackageBodyStatement;
+import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.pkg.XuguCreatePackageStatement;
 import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.procedure.XuguCreateProcedureStatement;
 import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.profile.XuguAlterProfileStatement;
 import com.xugudb.shardingsphere.sql.parser.statement.xugu.ddl.profile.XuguCreateProfileStatement;
@@ -778,6 +783,24 @@ public final class XuguDDLStatementVisitor extends XuguStatementVisitor implemen
     @Override
     public ASTNode visitAlterPackage(final AlterPackageContext ctx) {
         return new AlterPackageStatement(getDatabaseType());
+    }
+    
+    @Override
+    public ASTNode visitCreateMacro(final CreateMacroContext ctx) {
+        if (null != ctx.createPackageBody()) {
+            return new XuguCreatePackageBodyStatement(getDatabaseType());
+        }
+        return new XuguCreatePackageStatement(getDatabaseType());
+    }
+    
+    @Override
+    public ASTNode visitCreatePackage(final CreatePackageContext ctx) {
+        return new XuguCreatePackageStatement(getDatabaseType());
+    }
+    
+    @Override
+    public ASTNode visitCreatePackageBody(final CreatePackageBodyContext ctx) {
+        return new XuguCreatePackageBodyStatement(getDatabaseType());
     }
     
     @Override

@@ -911,6 +911,10 @@ COMPILE
     : C O M P I L E
     ;
 
+RECOMPILE
+    : R E C O M P I L E
+    ;
+
 USABLE
     : U S A B L E
     ;

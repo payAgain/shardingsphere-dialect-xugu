@@ -1422,6 +1422,7 @@ flashbackArchiveClause
 alterPackage
     : ALTER PACKAGE packageName (
     | packageCompileClause
+    | RECOMPILE
     | (EDITIONABLE | NONEDITIONABLE)
     )
     ;
@@ -1462,6 +1463,7 @@ alterRollbackSegment
 
 packageCompileClause
     : COMPILE DEBUG? (PACKAGE | SPECIFICATION | BODY)? (compilerParametersClause*)? (REUSE SETTINGS)?
+    | RECOMPILE
     ;
 
 alterSynonym
@@ -1566,6 +1568,7 @@ alterView
     | MODIFY CONSTRAINT constraintName (RELY | NORELY)
     | DROP (CONSTRAINT constraintName | PRIMARY KEY | UNIQUE columnNames)
     | COMPILE
+    | RECOMPILE
     | READ (ONLY | WRITE)
     | (EDITIONABLE | NONEDITIONABLE)
     )
@@ -3784,7 +3787,7 @@ forRefreshClause
     ;
 
 alterFunction
-    : ALTER FUNCTION function (functionCompileClause | (EDITIONABLE | NONEDITIONABLE))
+    : ALTER FUNCTION function (functionCompileClause | RECOMPILE | (EDITIONABLE | NONEDITIONABLE))
     ;
 
 functionCompileClause

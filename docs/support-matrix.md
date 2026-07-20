@@ -40,6 +40,8 @@ Capabilities below are **in product scope** and have dialect SPI and/or baseline
 | **Encrypt** | Supported | Column encrypt/decrypt via SS encrypt rule (no XuGu-specific encrypt SPI) | B6 AES phone column |
 | **Pagination** | Supported | Native **`LIMIT`** merge path | [pagination-decision.md](pagination-decision.md) · B5 |
 | **Batch DML** | Supported | JDBC batch insert across shards | B4 |
+| **Cold DDL (subset)** | Supported | CREATE/ALTER/DROP TABLE·INDEX·VIEW·SEQUENCE via native and/or SS | [ddl-plsql-coverage.md](ddl-plsql-coverage.md) · `-Pddl-plsql` |
+| **PL/SQL object surface (subset)** | Supported | PROCEDURE·FUNCTION·TRIGGER·PACKAGE CREATE/ALTER/DROP + CALL | [ddl-plsql-coverage.md](ddl-plsql-coverage.md); not full PL/SQL language |
 | **Federation stubs** | Supported (stubs) | Federation connection config + safe-empty `FunctionRegister` + `ColumnTypeConverter` | Not a claim of full federated SQL workload coverage |
 | **SQLException mapping** | Supported (baseline) | `XuguSQLDialectExceptionMapper` present | Broader error-code map = G-004 P1-4 |
 
@@ -55,7 +57,7 @@ Do **not** enable, document as supported, or invent no-op SPIs for these items.
 | **MySQL / Oracle / PostgreSQL compatible modes** | NOT supported | Only `compatiblemode=NONE`; no MySQL-trunk fallback or other-mode dialect branch |
 | **`DialectDatabasePrivilegeChecker`** | DEFER | XuGu privilege model not mapped to SS checker API; inventing a no-op checker is forbidden ([parity-matrix.md](parity-matrix.md)) |
 | **`DialectShardingDALResultMerger` (SHOW DAL)** | DEFER | NONE mode has no MySQL-style SHOW DAL product surface |
-| **Full PL/SQL / cold DDL parser** | DEFER | Expand only as baseline SQL requires; full PL/SQL is out of XuGu–SS product scope for now |
+| **Full PL/SQL language / Oracle-only DDL forms** | DEFER (partial) | Object surface subset is Supported ([ddl-plsql-coverage.md](ddl-plsql-coverage.md)); still DEFER: empty PACKAGE, unqualified `DROP INDEX`, `ALTER INDEX REBUILD`, `ALTER VIEW COMPILE` (use RECOMPILE), deep procedural PL/SQL |
 | **XA `setTransactionTimeout` / RM XA timeout abort** | **CLOSED_AS_DEFER** | G-006 Q-02: driver stub ignores `setTransactionTimeout` (`COMMITTED_DESPITE_TIMEOUT`); wrapper has no alt API. **Ops workaround:** application/TM-level timeout / cancel **before** 2PC — do not claim RM XA timeout abort ([xa-recovery-evidence.md](xa-recovery-evidence.md)) |
 | **Multi-machine / physical read replica topology** | NOT supported (out of Goal) | G-004 explicitly excludes multi-machine / independent physical replicas; same-host simulation only |
 | **Remote Maven publish / push / protected Ship** | Human Ship gate | Local `mvn clean install` is the consumer path until authorized |
@@ -111,6 +113,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | [pagination-decision.md](pagination-decision.md) | LIMIT vs ROWNUM probe → LIMIT |
 | [g003-acceptance.md](g003-acceptance.md) | Prior Goal Accept (baseline + DEFER clearance) |
 | [topology-same-host.md](topology-same-host.md) | T3=A same-host deepen limits + BLOCKED_ENV |
+| [ddl-plsql-coverage.md](ddl-plsql-coverage.md) | Q-04 cold DDL + PL/SQL object surface inventory |
 | [examples/sharding-two-ds.yaml](examples/sharding-two-ds.yaml) | Dual-DS sharding YAML template |
 
 ---
@@ -119,7 +122,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 
 | Category | Items |
 |---|---|
-| **Supported** | JDBC dialect · sharding · same-host readwrite (topology caveats) · local TX+savepoint · XA wrapper (happy-path) · encrypt · LIMIT pagination · batch · federation stubs · baseline ExceptionMapper |
+| **Supported** | JDBC dialect · sharding · same-host readwrite (topology caveats) · local TX+savepoint · XA wrapper (happy-path) · encrypt · LIMIT pagination · batch · cold DDL subset · PL/SQL object surface subset · federation stubs · baseline ExceptionMapper |
 | **NOT supported** | Proxy · MySQL/Oracle/PG compat modes · multi-machine / physical replica · MySQL trunk fallback |
-| **DEFER / CLOSED_AS_DEFER** | PrivilegeChecker · SHOW DAL merger · full PL/SQL parser · XA RM timeout (`setTransactionTimeout`, CLOSED_AS_DEFER) |
+| **DEFER / CLOSED_AS_DEFER** | PrivilegeChecker · SHOW DAL merger · full PL/SQL language / Oracle-only DDL forms (see ddl-plsql-coverage) · XA RM timeout (`setTransactionTimeout`, CLOSED_AS_DEFER) |
 | **Hardening open** | P1-1..P1-4 (XA recovery · load/fault · env2 · ExceptionMapper map) |

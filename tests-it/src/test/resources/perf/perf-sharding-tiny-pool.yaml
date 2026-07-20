@@ -1,0 +1,47 @@
+# P1-2 fault path: deliberately tiny Hikari pools (pool exhaustion under concurrency)
+databaseName: perf_fault_shard_db
+
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.ds0}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+    maximumPoolSize: 2
+    connectionTimeout: 1500
+    poolName: perf-ds0-tiny
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.xugu.cloudjdbc.Driver
+    jdbcUrl: ${jdbc.url.ds1}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+    maximumPoolSize: 2
+    connectionTimeout: 1500
+    poolName: perf-ds1-tiny
+
+rules:
+- !SHARDING
+  tables:
+    baseline_tx_order:
+      actualDataNodes: ds_${0..1}.BASELINE_TX_ORDER
+      databaseStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: database_inline
+      tableStrategy:
+        none:
+  shardingAlgorithms:
+    database_inline:
+      type: INLINE
+      props:
+        algorithm-expression: ds_${user_id % 2}
+
+props:
+  sql-show: false

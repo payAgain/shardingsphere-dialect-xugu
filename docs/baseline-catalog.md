@@ -26,19 +26,21 @@ Unreachable XuGu host → JUnit Assumption **SKIP** (not failure).
 
 Shared fixture: `com.xugudb.shardingsphere.it.baseline.BaselineSupport`.
 
+Each B1–B7 class has ≥3 `@Test` methods: happy-path, boundary/failure, concurrency smoke (8 threads + `CountDownLatch`).
+
 ---
 
 ## Catalog
 
-| ID | Class | YAML | Asserts |
-|---|---|---|---|
-| B1 | `OrderDbTableShardingIT` | `baseline/baseline-order-sharding.yaml` | DB+table sharding on `baseline_order` / `baseline_order_item`; place order + item; query by `order_id`; two-query association |
-| B2 | `ReadwriteSplittingIT` | `baseline/baseline-readwrite.yaml` | `write_ds` + `read_ds_0/1`; insert + select; `sql-show: true`. IT maps read URLs to write physical DB (no replica) |
-| B3 | `LocalTransactionSavepointIT` | `baseline/baseline-sharding-db.yaml` | `autoCommit=false`; insert; savepoint; insert; rollback to savepoint; commit; row count |
-| B4 | `BatchInsertIT` | `baseline/baseline-sharding-db.yaml` | `PreparedStatement.addBatch` ~20 rows across shard keys; physical counts 10/10 |
-| B5 | `PaginationListIT` | `baseline/baseline-sharding-db.yaml` | Seed rows; `SELECT ... ORDER BY id LIMIT 5`; result size ≤ 5 (requires LIMIT visitor → pagination merge) |
-| B6 | `EncryptColumnIT` | `baseline/baseline-encrypt.yaml` | AES encrypt on `phone`; SS select returns plaintext; physical `PHONE_CIPHER` ≠ plaintext |
-| B7 | `XATransactionIT` | `baseline/baseline-xa.yaml` | `transaction.defaultType=XA` + Atomikos; commit across ds0/ds1; rollback leaves prior counts |
+| ID | Class | YAML | `@Test` methods | Asserts |
+|---|---|---|---|---|
+| B1 | `OrderDbTableShardingIT` | `baseline/baseline-order-sharding.yaml` | `placeOrderQueryAndJoin`; `queryMissingOrderReturnsEmptyAndDuplicateKeyFails`; `concurrentPlaceOrdersSmoke` | DB+table sharding on `baseline_order` / `baseline_order_item`; place order + item; query by `order_id`; empty miss + duplicate PK; 8-thread insert/select |
+| B2 | `ReadwriteSplittingIT` | `baseline/baseline-readwrite.yaml` | `writeThenReadSmoke`; `selectMissingIdReturnsEmptyAndDuplicateKeyFails`; `concurrentWriteReadSmoke` | `write_ds` + `read_ds_0/1`; insert + select; empty miss + duplicate PK; 8-thread write/read. IT maps read URLs to write physical DB (no replica) |
+| B3 | `LocalTransactionSavepointIT` | `baseline/baseline-sharding-db.yaml` | `rollbackToSavepointKeepsEarlierRows`; `fullRollbackLeavesNoRows`; `concurrentLocalTxSmoke` | savepoint keep; full rollback → 0 rows; 8-thread local commit |
+| B4 | `BatchInsertIT` | `baseline/baseline-sharding-db.yaml` | `batchInsertAcrossShards`; `emptyBatchIsNoOpAndDuplicateKeyInBatchFails`; `concurrentBatchInsertSmoke` | batch ~20 rows 10/10; empty batch + duplicate batch fails; 8×2 concurrent batch |
+| B5 | `PaginationListIT` | `baseline/baseline-sharding-db.yaml` | `limitReturnsAtMostFiveRows`; `limitOnEmptyTableReturnsZero`; `concurrentPaginationSmoke` | `LIMIT 5` ≤5; empty LIMIT → 0; 8-thread concurrent LIMIT 3 |
+| B6 | `EncryptColumnIT` | `baseline/baseline-encrypt.yaml` | `insertPlaintextSelectDecrypted`; `selectMissingUserReturnsEmptyAndDuplicateKeyFails`; `concurrentEncryptInsertSelectSmoke` | AES phone encrypt/decrypt; empty miss + duplicate PK; 8-thread encrypt I/O |
+| B7 | `XATransactionIT` | `baseline/baseline-xa.yaml` | `xaCommitAndRollbackAcrossShards`; `xaDuplicateKeyFailsAndLeavesPriorCounts`; `concurrentXaCommitSmoke` | XA commit/rollback; duplicate PK leaves prior counts; 8-thread XA commit |
 
 ## Physical naming
 

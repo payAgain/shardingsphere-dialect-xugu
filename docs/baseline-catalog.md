@@ -28,6 +28,12 @@ Shared fixture: `com.xugudb.shardingsphere.it.baseline.BaselineSupport`.
 
 Each B1–B7 class has ≥3 `@Test` methods: happy-path, boundary/failure, concurrency smoke (8 threads + `CountDownLatch`).
 
+### B2 readwrite limits (P0-2)
+
+- Topology: **same XuGu host**, `write_ds` → `baseline_write`, `read_ds_*` → `baseline_read0` / `baseline_read1` (different DATABASE, not a physical replica).
+- Routing asserts via JDBC URL path + row presence on write vs read DATABASE (sql-show remains enabled in YAML for manual log inspection).
+- Do **not** claim replica lag, streaming replication, or physical read-only isolation from these ITs.
+
 ---
 
 ## Catalog
@@ -35,7 +41,7 @@ Each B1–B7 class has ≥3 `@Test` methods: happy-path, boundary/failure, concu
 | ID | Class | YAML | `@Test` methods | Asserts |
 |---|---|---|---|---|
 | B1 | `OrderDbTableShardingIT` | `baseline/baseline-order-sharding.yaml` | `placeOrderQueryAndJoin`; `queryMissingOrderReturnsEmptyAndDuplicateKeyFails`; `concurrentPlaceOrdersSmoke` | DB+table sharding on `baseline_order` / `baseline_order_item`; place order + item; query by `order_id`; empty miss + duplicate PK; 8-thread insert/select |
-| B2 | `ReadwriteSplittingIT` | `baseline/baseline-readwrite.yaml` | `writeThenReadSmoke`; `selectMissingIdReturnsEmptyAndDuplicateKeyFails`; `concurrentWriteReadSmoke` | `write_ds` + `read_ds_0/1`; insert + select; empty miss + duplicate PK; 8-thread write/read. IT maps read URLs to write physical DB (no replica) |
+| B2 | `ReadwriteSplittingIT` | `baseline/baseline-readwrite.yaml` | `writeThenReadSmoke`; `selectMissingIdReturnsEmptyAndDuplicateKeyFails`; `concurrentWriteReadSmoke`; `sameHostReadDsRoutingIsolation` | Same-host different DATABASE (`baseline_write` / `baseline_read0` / `baseline_read1`): INSERT→write only; auto-commit SELECT→read (marker / miss write row); in-TX SELECT (PRIMARY)→write. **Not** physical replica lag/isolation |
 | B3 | `LocalTransactionSavepointIT` | `baseline/baseline-sharding-db.yaml` | `rollbackToSavepointKeepsEarlierRows`; `fullRollbackLeavesNoRows`; `concurrentLocalTxSmoke` | savepoint keep; full rollback → 0 rows; 8-thread local commit |
 | B4 | `BatchInsertIT` | `baseline/baseline-sharding-db.yaml` | `batchInsertAcrossShards`; `emptyBatchIsNoOpAndDuplicateKeyInBatchFails`; `concurrentBatchInsertSmoke` | batch ~20 rows 10/10; empty batch + duplicate batch fails; 8×2 concurrent batch |
 | B5 | `PaginationListIT` | `baseline/baseline-sharding-db.yaml` | `limitReturnsAtMostFiveRows`; `limitOnEmptyTableReturnsZero`; `concurrentPaginationSmoke` | `LIMIT 5` ≤5; empty LIMIT → 0; 8-thread concurrent LIMIT 3 |

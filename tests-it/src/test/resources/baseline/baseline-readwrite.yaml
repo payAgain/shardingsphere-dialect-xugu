@@ -1,4 +1,5 @@
-# B2: readwrite-splitting smoke (3 logical DS; may share one physical DB for IT)
+# B2: readwrite-splitting (3 logical DS on same XuGu host, different DATABASE paths).
+# Same-host routing simulation only — NOT a physical read replica / lag topology.
 databaseName: baseline_rw_db
 
 mode:

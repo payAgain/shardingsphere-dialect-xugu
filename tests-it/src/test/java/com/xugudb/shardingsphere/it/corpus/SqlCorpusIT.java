@@ -285,9 +285,11 @@ class SqlCorpusIT {
 
     private static void ensureFixtureTables(final Properties props) throws Exception {
         for (String urlKey : new String[]{"jdbc.url.corpus_ds0", "jdbc.url.corpus_ds1"}) {
-            dropQuietly(props, urlKey, TABLE);
-            dropQuietly(props, urlKey, SHARD_TABLE);
-            dropQuietly(props, urlKey, "CORPUS_SIMPLE");
+            dropQuietly(props, urlKey, "DROP PROCEDURE CORPUS_P");
+            dropQuietly(props, urlKey, "DROP INDEX CORPUS_IDX");
+            dropQuietly(props, urlKey, "DROP TABLE " + TABLE);
+            dropQuietly(props, urlKey, "DROP TABLE " + SHARD_TABLE);
+            dropQuietly(props, urlKey, "DROP TABLE CORPUS_SIMPLE");
             BaselineSupport.executeOn(props, urlKey,
                     "CREATE TABLE " + TABLE
                             + " (ID INT PRIMARY KEY, USER_ID INT NOT NULL, STATUS VARCHAR(32), AMT INT, NAME VARCHAR(64))");
@@ -319,15 +321,17 @@ class SqlCorpusIT {
 
     private static void cleanupFixture(final Properties props) {
         for (String urlKey : new String[]{"jdbc.url.corpus_ds0", "jdbc.url.corpus_ds1"}) {
-            dropQuietly(props, urlKey, TABLE);
-            dropQuietly(props, urlKey, SHARD_TABLE);
-            dropQuietly(props, urlKey, "CORPUS_SIMPLE");
+            dropQuietly(props, urlKey, "DROP PROCEDURE CORPUS_P");
+            dropQuietly(props, urlKey, "DROP INDEX CORPUS_IDX");
+            dropQuietly(props, urlKey, "DROP TABLE " + TABLE);
+            dropQuietly(props, urlKey, "DROP TABLE " + SHARD_TABLE);
+            dropQuietly(props, urlKey, "DROP TABLE CORPUS_SIMPLE");
         }
     }
 
-    private static void dropQuietly(final Properties props, final String urlKey, final String table) {
+    private static void dropQuietly(final Properties props, final String urlKey, final String ddl) {
         try {
-            BaselineSupport.executeOn(props, urlKey, "DROP TABLE " + table);
+            BaselineSupport.executeOn(props, urlKey, ddl);
         } catch (Exception ignored) {
             // best-effort
         }

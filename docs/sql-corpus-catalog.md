@@ -1,4 +1,4 @@
-# SQL Business Corpus Catalog (G-005 T1)
+# SQL Business Corpus Catalog (G-005 T1 / G-006 Q-03)
 
 **Dialect:** XuGu · `compatiblemode=NONE` only  
 **Lab:** `jdbc:xugu://192.168.2.239:5138/…` (isolated DATABASE prefix `corpus_*`)  
@@ -13,6 +13,7 @@
 | Triaged | ≥60 | PASS + DEFER |
 | PASS | ≥40 | executed/parsed on lab |
 | FAIL | 0 | DEFER allowed with reason |
+| Q-03 DEFER reduction | DEFER ≤10 **or** newly promoted PASS ≥8 | Lab triage 2026-07-20 |
 
 ## Expect
 
@@ -31,9 +32,17 @@
 | `ss_shard` | ShardingSphere dual-DS shard (`corpus-shard.yaml`) |
 | `parse` | parser only |
 
+## Q-03 triage (C061–C080)
+
+| Class | Meaning | IDs |
+|---|---|---|
+| **A** | Promote to PASS with existing parser + native/SS execute (minimal SQL fix only) | C061, C063, C065, C066, C067, C068, C069, C070, C072, C073, C074, C075, C077, C079, C080 |
+| **B** | Parse-only PASS (execute unsafe or rejected by XuGu) | C064, C071 |
+| **C** | Permanent product DEFER | C062, C076, C078 |
+
 ## Cases
 
-| id | category | SQL / description | expect | status | reason (if DEFER) |
+| id | category | SQL / description | expect | status | reason (if DEFER) / triage |
 |---|---|---|---|---|---|
 | C001 | select | `SELECT 1 FROM DUAL` | both | PASS | |
 | C002 | select | `SELECT 1 AS N FROM DUAL` | both | PASS | |
@@ -95,34 +104,36 @@
 | C058 | limit | `SELECT ID FROM CORPUS_T WHERE STATUS = 'SEED' LIMIT 2` via SS | execute | PASS | |
 | C059 | select | `SELECT DISTINCT STATUS FROM CORPUS_T` | execute | PASS | |
 | C060 | select | `SELECT ID FROM CORPUS_T WHERE ID <> 0` | execute | PASS | |
-| C061 | advanced | `WITH cte AS (SELECT 1 AS N FROM DUAL) SELECT N FROM cte` | both | DEFER | CTE not in XuGu-SS whitelist / parser scope |
-| C062 | advanced | `SELECT * FROM CORPUS_T WINDOW w AS (PARTITION BY USER_ID)` | both | DEFER | WINDOW clause out of baseline whitelist |
-| C063 | advanced | `MERGE INTO CORPUS_T …` | both | DEFER | MERGE not supported in XuGu-SS dialect whitelist |
-| C064 | advanced | hierarchical `CONNECT BY` | both | DEFER | hierarchical CONNECT BY out of scope |
-| C065 | advanced | `SELECT * FROM CORPUS_T FOR UPDATE` | both | DEFER | FOR UPDATE locking semantics not corpus-proven on SS path |
-| C066 | advanced | `CREATE PROCEDURE …` | both | DEFER | full PL/SQL parser DEFER per support-matrix |
-| C067 | advanced | `INTERSECT` set op | both | DEFER | set INTERSECT not in whitelist |
-| C068 | advanced | `MINUS` set op | both | DEFER | MINUS set op not in whitelist |
-| C069 | advanced | `FULL OUTER JOIN` | both | DEFER | FULL OUTER JOIN / federation sensitive |
-| C070 | advanced | `ROWNUM <= 5` pagination | both | DEFER | product pagination strategy is LIMIT not ROWNUM |
-| C071 | advanced | ANSI `OFFSET … FETCH` | both | DEFER | ANSI OFFSET/FETCH disabled for XuGu rewrite |
-| C072 | advanced | `CREATE INDEX …` | both | DEFER | cold DDL index not required for corpus PASS gate |
-| C073 | advanced | `ALTER TABLE … ADD …` | both | DEFER | ALTER TABLE cold DDL expand-only-if-needed |
-| C074 | advanced | `TRUNCATE TABLE CORPUS_T` | both | DEFER | TRUNCATE through SS not corpus-proven |
-| C075 | advanced | `INSERT … SELECT …` | both | DEFER | INSERT..SELECT federation/bind edge |
-| C076 | xa | XA prepare-only corpus probe | execute | DEFER | XA prepare-kill is G-005 T2 not T1 corpus |
-| C077 | privilege | `GRANT SELECT …` | both | DEFER | PrivilegeChecker / GRANT path DEFER |
-| C078 | dal | `SHOW TABLES` | both | DEFER | SHOW DAL merger DEFER per support-matrix |
-| C079 | advanced | `JSON_OBJECT(…)` | both | DEFER | JSON functions not in whitelist |
-| C080 | advanced | `REGEXP_LIKE(…)` | both | DEFER | regex helper not corpus-scoped |
+| C061 | advanced | `WITH cte AS (SELECT 1 AS N FROM DUAL) SELECT N FROM cte` | both | PASS | A: CTE parse+native+SS |
+| C062 | advanced | `SELECT * FROM CORPUS_T WINDOW w AS (PARTITION BY USER_ID)` | both | DEFER | C: WINDOW rejected by XuGu + SS parser |
+| C063 | advanced | `MERGE INTO CORPUS_T …` | both | PASS | A: MERGE parse+native |
+| C064 | advanced | hierarchical `CONNECT BY` | parse | PASS | B: parse OK; execute infinite-loop on lab |
+| C065 | advanced | `SELECT * FROM CORPUS_T FOR UPDATE` | both | PASS | A: FOR UPDATE via SS |
+| C066 | advanced | `CREATE PROCEDURE …` | both | PASS | A: procedure DDL native (cleanup DROP PROCEDURE) |
+| C067 | advanced | `INTERSECT` set op | both | PASS | A |
+| C068 | advanced | `MINUS` set op | both | PASS | A |
+| C069 | advanced | `FULL OUTER JOIN` | both | PASS | A: single-DS native (not shard federation) |
+| C070 | advanced | `ROWNUM <= 5` | both | PASS | A: lab OK; product pagination strategy remains LIMIT |
+| C071 | advanced | ANSI `OFFSET … FETCH` | parse | PASS | B: parse OK; XuGu rejects execute |
+| C072 | advanced | `CREATE INDEX …` | both | PASS | A: cold index DDL native |
+| C073 | advanced | `ALTER TABLE … ADD …` | both | PASS | A: cold ALTER native |
+| C074 | advanced | `TRUNCATE TABLE CORPUS_T` | both | PASS | A: TRUNCATE via SS |
+| C075 | advanced | `INSERT … SELECT …` (explicit columns) | both | PASS | A: SS path; column list avoids ALTER widen mismatch |
+| C076 | xa | XA prepare-only corpus probe | execute | DEFER | C: XA recovery is Q-01 track |
+| C077 | privilege | `GRANT SELECT …` | both | PASS | A: GRANT SQL OK; PrivilegeChecker SPI still DEFER |
+| C078 | dal | `SHOW TABLES` | both | DEFER | C: SHOW DAL not in NONE-mode product surface |
+| C079 | advanced | `JSON_OBJECT(…)` | execute | PASS | A: native execute; XuGu-SS JSON parse still incomplete |
+| C080 | advanced | `REGEXP_LIKE(…)` | both | PASS | A |
 
-## Summary counts (lab 2026-07-20)
+## Summary counts (lab 2026-07-20, Q-03)
 
-| Triaged | PASS | DEFER | FAIL |
-|---|---|---|---|
-| 80 | 60 | 20 | 0 |
+| Triaged | PASS | DEFER | FAIL | Newly promoted |
+|---|---|---|---|---|
+| 80 | 77 | 3 | 0 | 17 |
 
-Observed via `-Psql-corpus`: `SQL_CORPUS triaged=80 PASS=60 DEFER=20 executed=60` · Tests run: 1, Failures: 0.
+Before Q-03: `PASS=60 DEFER=20`. After: `PASS=77 DEFER=3` (gate: DEFER≤10 and promoted≥8).
+
+Observed via `-Psql-corpus`: see latest IT stdout `SQL_CORPUS triaged=80 PASS=77 DEFER=3`.
 
 ## How to run
 

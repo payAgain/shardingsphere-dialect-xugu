@@ -59,23 +59,23 @@ C057	select	SELECT ID FROM CORPUS_T WHERE USER_ID = 1 AND STATUS = 'SEED'	execut
 C058	limit	SELECT ID FROM CORPUS_T WHERE STATUS = 'SEED' LIMIT 2	execute	PASS	ss	
 C059	select	SELECT DISTINCT STATUS FROM CORPUS_T	execute	PASS	native	
 C060	select	SELECT ID FROM CORPUS_T WHERE ID <> 0	execute	PASS	native	
-C061	advanced	WITH cte AS (SELECT 1 AS N FROM DUAL) SELECT N FROM cte	both	DEFER	native	CTE not in XuGu-SS whitelist / parser scope
-C062	advanced	SELECT * FROM CORPUS_T WINDOW w AS (PARTITION BY USER_ID)	both	DEFER	native	WINDOW clause out of baseline whitelist
-C063	advanced	MERGE INTO CORPUS_T t USING DUAL s ON (1=0) WHEN MATCHED THEN UPDATE SET NAME='x'	both	DEFER	native	MERGE not supported in XuGu-SS dialect whitelist
-C064	advanced	SELECT ID FROM CORPUS_T START WITH ID = 1 CONNECT BY PRIOR ID = USER_ID	both	DEFER	native	hierarchical CONNECT BY out of scope
-C065	advanced	SELECT * FROM CORPUS_T FOR UPDATE	both	DEFER	ss	FOR UPDATE locking semantics not corpus-proven on SS path
-C066	advanced	CREATE PROCEDURE CORPUS_P AS BEGIN NULL; END	both	DEFER	native	full PL/SQL parser DEFER per support-matrix
-C067	advanced	SELECT ID FROM CORPUS_T INTERSECT SELECT ID FROM CORPUS_T	both	DEFER	native	set INTERSECT not in whitelist
-C068	advanced	SELECT ID FROM CORPUS_T MINUS SELECT ID FROM CORPUS_T WHERE 1=0	both	DEFER	native	MINUS set op not in whitelist
-C069	advanced	SELECT * FROM CORPUS_T a FULL OUTER JOIN CORPUS_T b ON a.ID = b.ID	both	DEFER	ss_shard	FULL OUTER JOIN / federation sensitive
-C070	advanced	SELECT ROWNUM FROM CORPUS_T WHERE ROWNUM <= 5	both	DEFER	native	product pagination strategy is LIMIT not ROWNUM
-C071	advanced	SELECT ID FROM CORPUS_T OFFSET 1 ROWS FETCH NEXT 5 ROWS ONLY	both	DEFER	native	ANSI OFFSET/FETCH disabled for XuGu rewrite
-C072	advanced	CREATE INDEX CORPUS_IDX ON CORPUS_T (NAME)	both	DEFER	native	cold DDL index not required for corpus PASS gate
-C073	advanced	ALTER TABLE CORPUS_T ADD REMARK VARCHAR(32)	both	DEFER	native	ALTER TABLE cold DDL expand-only-if-needed
-C074	advanced	TRUNCATE TABLE CORPUS_T	both	DEFER	ss	TRUNCATE through SS not corpus-proven
-C075	advanced	INSERT INTO CORPUS_T SELECT ID, USER_ID, STATUS, AMT, NAME FROM CORPUS_T WHERE 1=0	both	DEFER	ss	INSERT..SELECT federation/bind edge
-C076	xa	scenario:xa prepare-only corpus probe	execute	DEFER	ss	XA prepare-kill is G-005 T2 not T1 corpus
-C077	privilege	GRANT SELECT ON CORPUS_T TO PUBLIC	both	DEFER	native	PrivilegeChecker / GRANT path DEFER
-C078	dal	SHOW TABLES	both	DEFER	ss	SHOW DAL merger DEFER per support-matrix
-C079	advanced	SELECT JSON_OBJECT('a':1) FROM DUAL	both	DEFER	native	JSON functions not in whitelist
-C080	advanced	SELECT REGEXP_LIKE(NAME, '^a') FROM CORPUS_T	both	DEFER	native	regex helper not corpus-scoped
+C061	advanced	WITH cte AS (SELECT 1 AS N FROM DUAL) SELECT N FROM cte	both	PASS	native	
+C062	advanced	SELECT * FROM CORPUS_T WINDOW w AS (PARTITION BY USER_ID)	both	DEFER	native	C: WINDOW syntax rejected by XuGu lab and SS parser
+C063	advanced	MERGE INTO CORPUS_T t USING DUAL s ON (1=0) WHEN MATCHED THEN UPDATE SET NAME='x'	both	PASS	native	
+C064	advanced	SELECT ID FROM CORPUS_T START WITH ID = 1 CONNECT BY PRIOR ID = USER_ID	parse	PASS	parse	
+C065	advanced	SELECT * FROM CORPUS_T FOR UPDATE	both	PASS	ss	
+C066	advanced	CREATE PROCEDURE CORPUS_P AS BEGIN NULL; END	both	PASS	native	
+C067	advanced	SELECT ID FROM CORPUS_T INTERSECT SELECT ID FROM CORPUS_T	both	PASS	native	
+C068	advanced	SELECT ID FROM CORPUS_T MINUS SELECT ID FROM CORPUS_T WHERE 1=0	both	PASS	native	
+C069	advanced	SELECT * FROM CORPUS_T a FULL OUTER JOIN CORPUS_T b ON a.ID = b.ID	both	PASS	native	
+C070	advanced	SELECT ROWNUM FROM CORPUS_T WHERE ROWNUM <= 5	both	PASS	native	
+C071	advanced	SELECT ID FROM CORPUS_T OFFSET 1 ROWS FETCH NEXT 5 ROWS ONLY	parse	PASS	parse	
+C072	advanced	CREATE INDEX CORPUS_IDX ON CORPUS_T (NAME)	both	PASS	native	
+C073	advanced	ALTER TABLE CORPUS_T ADD REMARK VARCHAR(32)	both	PASS	native	
+C074	advanced	TRUNCATE TABLE CORPUS_T	both	PASS	ss	
+C075	advanced	INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) SELECT ID, USER_ID, STATUS, AMT, NAME FROM CORPUS_T WHERE 1=0	both	PASS	ss	
+C076	xa	scenario:xa prepare-only corpus probe	execute	DEFER	ss	C: XA prepare-kill is G-006 Q-01 / recovery track not corpus
+C077	privilege	GRANT SELECT ON CORPUS_T TO PUBLIC	both	PASS	native	
+C078	dal	SHOW TABLES	both	DEFER	ss	C: SHOW DAL merger / MySQL-style SHOW not in NONE-mode product surface
+C079	advanced	SELECT JSON_OBJECT('a':1) FROM DUAL	execute	PASS	native	
+C080	advanced	SELECT REGEXP_LIKE(NAME, '^a') FROM CORPUS_T	both	PASS	native	

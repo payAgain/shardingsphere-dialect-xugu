@@ -21,6 +21,7 @@
         <module>database-exception-xugu</module>
         <module>jdbc-dialect-xugu</module>
         <module>proxy-backend-xugu</module>
+        <module>proxy-dialect-xugu</module>
         <module>tests-it</module>
     </modules>
     <properties>

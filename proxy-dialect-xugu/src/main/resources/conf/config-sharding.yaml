@@ -1,0 +1,46 @@
+# Dual-datasource database sharding — XuGu native storage (compatiblemode=NONE only)
+# Wire: connect with MySQL JDBC to Proxy logic_db (see docs/proxy-quick-start.md).
+# Replace <DB0> / <DB1> with existing XuGu DATABASE names on the lab host before first run.
+# XuGu IdentifierPatternType=UPPER_CASE; physical table nodes use uppercase (T_ORDER).
+
+databaseName: logic_db
+
+dataSources:
+  ds_0:
+    url: jdbc:xugu://192.168.2.239:5138/<DB0>?compatiblemode=NONE&charset=UTF8
+    username: SYSDBA
+    password: SYSDBA
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 50
+    minPoolSize: 2
+  ds_1:
+    url: jdbc:xugu://192.168.2.239:5138/<DB1>?compatiblemode=NONE&charset=UTF8
+    username: SYSDBA
+    password: SYSDBA
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 50
+    minPoolSize: 2
+
+rules:
+- !SHARDING
+  tables:
+    t_order:
+      actualDataNodes: ds_${0..1}.T_ORDER
+      databaseStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: database_inline
+      tableStrategy:
+        none:
+  shardingAlgorithms:
+    database_inline:
+      type: INLINE
+      props:
+        algorithm-expression: ds_${user_id % 2}
+
+props:
+  sql-show: true

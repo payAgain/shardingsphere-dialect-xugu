@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xugudb.shardingsphere</groupId>
+        <artifactId>shardingsphere-dialect-xugu-parent</artifactId>
+        <version>5.5.3-xugu.2</version>
+    </parent>
+    <artifactId>shardingsphere-proxy-dialect-xugu</artifactId>
+    <packaging>pom</packaging>
+    <name>shardingsphere-proxy-dialect-xugu</name>
+    <description>
+        Aggregate XuGu Proxy dialect: MySQL wire frontend + XuGu storage stack (NONE).
+        Does not pull shardingsphere-parser-sql-engine-mysql for storage parsing.
+    </description>
+    <dependencies>
+        <!-- XuGu JDBC dialect stack (parser-sql-engine-xugu, binder/route/rewrite-xugu, …) -->
+        <dependency>
+            <groupId>com.xugudb.shardingsphere</groupId>
+            <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- XuGu Proxy backend SPI (QueryHeader, admin stubs) -->
+        <dependency>
+            <groupId>com.xugudb.shardingsphere</groupId>
+            <artifactId>shardingsphere-proxy-backend-xugu</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- MySQL wire protocol (client-facing only; storage remains XuGu) -->
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-proxy-frontend-core</artifactId>
+            <version>${shardingsphere.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-protocol-mysql</artifactId>
+            <version>${shardingsphere.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-proxy-frontend-mysql</artifactId>
+            <version>${shardingsphere.version}</version>
+            <scope>runtime</scope>
+            <exclusions>
+                <!-- Wire-only: drop MySQL storage backend + parser-sql-engine-mysql -->
+                <exclusion>
+                    <groupId>org.apache.shardingsphere</groupId>
+                    <artifactId>shardingsphere-proxy-backend-mysql</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- XuGu JDBC driver for storage connection pools -->
+        <dependency>
+            <groupId>com.xugudb</groupId>
+            <artifactId>xugu-jdbc</artifactId>
+            <version>${xugu.jdbc.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+</project>

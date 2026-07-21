@@ -37,4 +37,24 @@ class XuguResultSetMapperTest {
         assertThat(dialectResultSetMapper.getDateValue(resultSet, 1), is(expected));
         verify(resultSet).getDate(1);
     }
+    
+    @Test
+    void assertGetDatabaseType() {
+        assertThat(dialectResultSetMapper.getDatabaseType(), is("XuGu"));
+    }
+    
+    @Test
+    void assertGetSmallintValueUsesGetIntNotGetShort() throws SQLException {
+        ResultSet resultSet = mock(ResultSet.class);
+        when(resultSet.getInt(2)).thenReturn(32767);
+        assertThat(dialectResultSetMapper.getSmallintValue(resultSet, 2), is(32767));
+        verify(resultSet).getInt(2);
+    }
+    
+    @Test
+    void assertGetDateValuePropagatesNull() throws SQLException {
+        ResultSet resultSet = mock(ResultSet.class);
+        when(resultSet.getDate(1)).thenReturn(null);
+        assertThat(dialectResultSetMapper.getDateValue(resultSet, 1), is((Date) null));
+    }
 }

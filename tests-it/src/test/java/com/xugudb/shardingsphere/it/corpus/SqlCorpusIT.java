@@ -243,6 +243,70 @@ class SqlCorpusIT {
             }
             return;
         }
+        if (desc.contains("sequence nextval increments")) {
+            try (Connection conn = DriverManager.getConnection(
+                    props.getProperty("jdbc.url.corpus_ds0"),
+                    props.getProperty("jdbc.user"),
+                    props.getProperty("jdbc.password"));
+                 Statement st = conn.createStatement()) {
+                long first;
+                try (ResultSet rs = st.executeQuery("SELECT CORPUS_SEQ.NEXTVAL FROM DUAL")) {
+                    assertTrue(rs.next());
+                    first = rs.getLong(1);
+                }
+                long second;
+                try (ResultSet rs = st.executeQuery("SELECT CORPUS_SEQ.NEXTVAL FROM DUAL")) {
+                    assertTrue(rs.next());
+                    second = rs.getLong(1);
+                }
+                assertEquals(first + 1, second, "CORPUS_SEQ INCREMENT BY 1");
+            }
+            return;
+        }
+        if (desc.contains("sequence currval matches nextval")) {
+            // XuGu NONE: CURRVAL('name') function; must share session with prior NEXTVAL
+            try (Connection conn = DriverManager.getConnection(
+                    props.getProperty("jdbc.url.corpus_ds0"),
+                    props.getProperty("jdbc.user"),
+                    props.getProperty("jdbc.password"));
+                 Statement st = conn.createStatement()) {
+                long next;
+                try (ResultSet rs = st.executeQuery("SELECT CORPUS_SEQ.NEXTVAL FROM DUAL")) {
+                    assertTrue(rs.next());
+                    next = rs.getLong(1);
+                }
+                long curr;
+                try (ResultSet rs = st.executeQuery("SELECT CURRVAL('CORPUS_SEQ') FROM DUAL")) {
+                    assertTrue(rs.next());
+                    curr = rs.getLong(1);
+                }
+                assertEquals(next, curr);
+            }
+            return;
+        }
+        if (desc.contains("nulls high asc puts null last")) {
+            try (Connection conn = DriverManager.getConnection(
+                    props.getProperty("jdbc.url.corpus_ds0"),
+                    props.getProperty("jdbc.user"),
+                    props.getProperty("jdbc.password"));
+                 Statement st = conn.createStatement()) {
+                st.executeUpdate(
+                        "INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) VALUES (960, 9, 'NULL', 0, NULL)");
+                st.executeUpdate(
+                        "INSERT INTO CORPUS_T (ID, USER_ID, STATUS, AMT, NAME) VALUES (961, 9, 'NULL', 0, 'zzz')");
+                try (ResultSet rs = st.executeQuery(
+                        "SELECT ID FROM CORPUS_T WHERE ID IN (960, 961) ORDER BY NAME ASC, ID ASC")) {
+                    assertTrue(rs.next());
+                    assertEquals(961, rs.getInt(1), "non-null NAME should sort before NULL under HIGH");
+                    assertTrue(rs.next());
+                    assertEquals(960, rs.getInt(1), "NULL NAME should sort last under HIGH ASC");
+                    assertFalse(rs.next());
+                } finally {
+                    st.executeUpdate("DELETE FROM CORPUS_T WHERE ID IN (960, 961)");
+                }
+            }
+            return;
+        }
         fail("unknown scenario: " + desc);
     }
 
@@ -290,12 +354,15 @@ class SqlCorpusIT {
             dropQuietly(props, urlKey, "DROP TABLE " + TABLE);
             dropQuietly(props, urlKey, "DROP TABLE " + SHARD_TABLE);
             dropQuietly(props, urlKey, "DROP TABLE CORPUS_SIMPLE");
+            dropQuietly(props, urlKey, "DROP SEQUENCE CORPUS_SEQ");
             BaselineSupport.executeOn(props, urlKey,
                     "CREATE TABLE " + TABLE
                             + " (ID INT PRIMARY KEY, USER_ID INT NOT NULL, STATUS VARCHAR(32), AMT INT, NAME VARCHAR(64))");
             BaselineSupport.executeOn(props, urlKey,
                     "CREATE TABLE " + SHARD_TABLE
                             + " (ID INT PRIMARY KEY, USER_ID INT NOT NULL, STATUS VARCHAR(32))");
+            BaselineSupport.executeOn(props, urlKey,
+                    "CREATE SEQUENCE CORPUS_SEQ START WITH 1 INCREMENT BY 1");
         }
     }
 
@@ -326,6 +393,7 @@ class SqlCorpusIT {
             dropQuietly(props, urlKey, "DROP TABLE " + TABLE);
             dropQuietly(props, urlKey, "DROP TABLE " + SHARD_TABLE);
             dropQuietly(props, urlKey, "DROP TABLE CORPUS_SIMPLE");
+            dropQuietly(props, urlKey, "DROP SEQUENCE CORPUS_SEQ");
         }
     }
 

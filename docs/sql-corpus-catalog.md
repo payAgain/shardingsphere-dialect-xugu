@@ -124,16 +124,45 @@
 | C078 | dal | `SHOW TABLES` | both | DEFER | C: SHOW DAL not in NONE-mode product surface |
 | C079 | advanced | `JSON_OBJECT(…)` | execute | PASS | A: native execute; XuGu-SS JSON parse still incomplete |
 | C080 | advanced | `REGEXP_LIKE(…)` | both | PASS | A |
+| C081 | runtimegap | `CAST(COUNT(*) AS INT)` | execute | PASS | P0 G-T3 |
+| C082 | runtimegap | `CAST(COUNT(*) AS INTEGER)` | execute | PASS | P0 G-T3 |
+| C083 | runtimegap | `CAST(COUNT(*) AS BIGINT)` via SS | execute | PASS | P0 G-T3 |
+| C084 | runtimegap | `SYS_GUID()` native | execute | PASS | P0 G-T3 |
+| C085 | runtimegap | `SYS_GUID()` via SS | execute | PASS | P0 G-T3 |
+| C086 | runtimegap | `NVL(NULL,'x')` | execute | PASS | P0 G-T3 |
+| C087 | runtimegap | `NVL2(NULL,'a','b')` | execute | PASS | P0 G-T3 |
+| C088 | runtimegap | `COALESCE(NULL,NULL,'z')` | execute | PASS | self |
+| C089 | runtimegap | `CASE WHEN …` via SS | execute | PASS | self |
+| C090 | runtimegap | `ABS(-7)` | execute | PASS | self |
+| C091 | runtimegap | `MOD(10,3)` | execute | PASS | self |
+| C092 | runtimegap | `TIMESTAMPDIFF(DAY, …)` | execute | PASS | P0 G-T3 |
+| C093 | sequence | `CORPUS_SEQ.NEXTVAL` native | execute | PASS | P0 G-T4 |
+| C094 | sequence | `CORPUS_SEQ.NEXTVAL` via SS | execute | PASS | P0 G-T4 |
+| C095 | sequence | scenario: nextval increments | execute | PASS | P0 G-T4 |
+| C096 | sequence | scenario: `CURRVAL('CORPUS_SEQ')` matches nextval | execute | PASS | P0 G-T4；XuGu 函数形，非 `seq.CURRVAL` |
+| C097 | nulls | `ORDER BY … NULLS FIRST` | execute | PASS | P0 G-T5 |
+| C098 | nulls | `ORDER BY … NULLS LAST` | execute | PASS | P0 G-T5 |
+| C099 | nulls | scenario: HIGH ASC null last | execute | PASS | P0 G-T5 |
+| C100 | select | `GROUP BY … HAVING` via SS | execute | PASS | self |
+| C101 | select | correlated `IN (SELECT …)` | execute | PASS | self |
 
-## Summary counts (lab 2026-07-20, Q-03)
+## Summary counts
+
+### Q-03 (lab 2026-07-20)
 
 | Triaged | PASS | DEFER | FAIL | Newly promoted |
 |---|---|---|---|---|
 | 80 | 77 | 3 | 0 | 17 |
 
-Before Q-03: `PASS=60 DEFER=20`. After: `PASS=77 DEFER=3` (gate: DEFER≤10 and promoted≥8).
+Before Q-03: `PASS=60 DEFER=20`. After: `PASS=77 DEFER=3`.
 
-Observed via `-Psql-corpus`: see latest IT stdout `SQL_CORPUS triaged=80 PASS=77 DEFER=3`.
+### P0 supplement (lab 2026-07-21, G-T3/G-T4/G-T5 + self)
+
+| Triaged | PASS | DEFER | FAIL | Added |
+|---|---|---|---|---|
+| **101** | **98** | **3** | **0** | C081–C101（+21） |
+
+Observed via `-Psql-corpus`: `SQL_CORPUS triaged=101 PASS=98 DEFER=3`.
 
 ## How to run
 

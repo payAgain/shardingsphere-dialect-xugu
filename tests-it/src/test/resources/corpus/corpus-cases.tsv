@@ -79,3 +79,24 @@ C077	privilege	GRANT SELECT ON CORPUS_T TO PUBLIC	both	PASS	native
 C078	dal	SHOW TABLES	both	DEFER	ss	C: SHOW DAL merger / MySQL-style SHOW not in NONE-mode product surface
 C079	advanced	SELECT JSON_OBJECT('a':1) FROM DUAL	execute	PASS	native	
 C080	advanced	SELECT REGEXP_LIKE(NAME, '^a') FROM CORPUS_T	both	PASS	native	
+C081	runtimegap	SELECT CAST(COUNT(*) AS INT) AS C FROM CORPUS_T	execute	PASS	native	
+C082	runtimegap	SELECT CAST(COUNT(*) AS INTEGER) AS C FROM CORPUS_T	execute	PASS	native	
+C083	runtimegap	SELECT CAST(COUNT(*) AS BIGINT) AS C FROM CORPUS_T	execute	PASS	ss	
+C084	runtimegap	SELECT SYS_GUID() AS G FROM DUAL	execute	PASS	native	
+C085	runtimegap	SELECT SYS_GUID() AS G FROM DUAL	execute	PASS	ss	
+C086	runtimegap	SELECT NVL(NULL, 'x') AS V FROM DUAL	execute	PASS	native	
+C087	runtimegap	SELECT NVL2(NULL, 'a', 'b') AS V FROM DUAL	execute	PASS	native	
+C088	runtimegap	SELECT COALESCE(NULL, NULL, 'z') AS V FROM DUAL	execute	PASS	native	
+C089	runtimegap	SELECT CASE WHEN 1=1 THEN 'Y' ELSE 'N' END AS V FROM DUAL	execute	PASS	ss	
+C090	runtimegap	SELECT ABS(-7) AS V FROM DUAL	execute	PASS	native	
+C091	runtimegap	SELECT MOD(10, 3) AS V FROM DUAL	execute	PASS	native	
+C092	runtimegap	SELECT TIMESTAMPDIFF(DAY, DATE '2026-07-01', DATE '2026-07-21') AS D FROM DUAL	execute	PASS	native	
+C093	sequence	SELECT CORPUS_SEQ.NEXTVAL FROM DUAL	execute	PASS	native	
+C094	sequence	SELECT CORPUS_SEQ.NEXTVAL FROM DUAL	execute	PASS	ss	
+C095	sequence	scenario:sequence nextval increments	execute	PASS	native	
+C096	sequence	scenario:sequence currval matches nextval	execute	PASS	native	
+C097	nulls	SELECT ID FROM CORPUS_T ORDER BY NAME ASC NULLS FIRST	execute	PASS	native	
+C098	nulls	SELECT ID FROM CORPUS_T ORDER BY NAME ASC NULLS LAST	execute	PASS	native	
+C099	nulls	scenario:nulls high asc puts null last	execute	PASS	native	
+C100	select	SELECT USER_ID, COUNT(*) AS C FROM CORPUS_T GROUP BY USER_ID HAVING COUNT(*) >= 1	execute	PASS	ss	
+C101	select	SELECT ID FROM CORPUS_T WHERE ID IN (SELECT ID FROM CORPUS_T WHERE USER_ID = 1)	execute	PASS	native	

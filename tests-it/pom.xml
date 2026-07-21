@@ -10,6 +10,9 @@
     </parent>
     <artifactId>shardingsphere-tests-it-xugu</artifactId>
     <name>shardingsphere-tests-it-xugu</name>
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>

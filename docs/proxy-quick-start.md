@@ -139,6 +139,22 @@ For sharding CRUD against `t_order`, use `user_id` values that route to `ds_0` /
 
 Expect `shardingsphere-parser-sql-engine-xugu` and **no** `shardingsphere-parser-sql-engine-mysql`.
 
+## Integration test (`-Pproxy`)
+
+Embedded Proxy IT (no external Proxy distribution required): MySQL JDBC → in-process Proxy (MySQL wire) → XuGu `compatiblemode=NONE` sharded CRUD.
+
+```powershell
+& "C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd" `
+  -f "E:\Work\java\shardingsphere-dialect-xugu\pom.xml" `
+  -pl tests-it -am `
+  "-Pproxy" test
+```
+
+- Includes: `tests-it/src/test/java/**/proxy/**/*IT.java`
+- Approach: `BootstrapInitializer` + `ShardingSphereProxy` (SS 5.5.3), conf rendered under a temp directory
+- Lab down / XuGu port refused → tests are skipped via `assumeReachable` (evidence status **BLOCKED_ENV**, not PASS)
+- Baseline profile remains separate: `"-Pbaseline"` (does not include proxy ITs)
+
 ## Version lock
 
 This quick-start targets dialect release **`5.5.3-xugu.2`** against upstream Proxy **`5.5.3`**. Do not mix other SS minor versions without re-validation.

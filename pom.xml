@@ -257,5 +257,23 @@
                 </plugins>
             </build>
         </profile>
+        <!-- G-007 P-003: MySQL JDBC → Proxy → XuGu NONE -->
+        <profile>
+            <id>proxy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <excludes combine.self="override"/>
+                            <includes>
+                                <include>**/proxy/**/*IT.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

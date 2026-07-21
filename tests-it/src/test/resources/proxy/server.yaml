@@ -1,0 +1,23 @@
+# Proxy IT global config — MySQL wire frontend, XuGu storage (NONE)
+mode:
+  type: Standalone
+  repository:
+    type: Memory
+
+authority:
+  users:
+    - user: root@%
+      password: root
+      admin: true
+    - user: sharding@%
+      password: sharding
+  privilege:
+    type: ALL_PERMITTED
+
+props:
+  max-connections-size-per-query: 1
+  kernel-executor-size: 8
+  proxy-frontend-flush-threshold: 128
+  sql-show: true
+  proxy-default-port: 3307
+  proxy-frontend-ssl-enabled: false

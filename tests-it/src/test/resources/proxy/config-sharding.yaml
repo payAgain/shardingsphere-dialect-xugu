@@ -1,0 +1,43 @@
+# Proxy IT sharding — placeholders substituted by ProxySupport before boot
+# Storage URLs must keep compatiblemode=NONE.
+databaseName: logic_db
+
+dataSources:
+  ds_0:
+    url: ${jdbc.url.ds0}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 16
+    minPoolSize: 1
+  ds_1:
+    url: ${jdbc.url.ds1}
+    username: ${jdbc.user}
+    password: ${jdbc.password}
+    connectionTimeoutMilliseconds: 30000
+    idleTimeoutMilliseconds: 60000
+    maxLifetimeMilliseconds: 1800000
+    maxPoolSize: 16
+    minPoolSize: 1
+
+rules:
+- !SHARDING
+  tables:
+    t_order:
+      actualDataNodes: ds_${0..1}.T_ORDER
+      databaseStrategy:
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: database_inline
+      tableStrategy:
+        none:
+  shardingAlgorithms:
+    database_inline:
+      type: INLINE
+      props:
+        algorithm-expression: ds_${user_id % 2}
+
+props:
+  sql-show: true

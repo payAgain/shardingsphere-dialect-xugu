@@ -1,4 +1,6 @@
 ﻿target/
+dist/
+tests-it/logs/
 .idea/
 *.iml
 .classpath

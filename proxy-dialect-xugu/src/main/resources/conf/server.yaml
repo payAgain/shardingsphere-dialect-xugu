@@ -18,6 +18,8 @@ authority:
     type: ALL_PERMITTED
 
 props:
+  # Required when storage is XuGu: keep client wire protocol = MySQL.
+  proxy-frontend-database-protocol-type: MySQL
   max-connections-size-per-query: 1
   kernel-executor-size: 16
   proxy-frontend-flush-threshold: 128

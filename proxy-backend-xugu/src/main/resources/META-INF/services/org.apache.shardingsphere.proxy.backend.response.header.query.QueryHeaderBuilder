@@ -1,1 +1,2 @@
 com.xugudb.shardingsphere.proxy.backend.xugu.response.header.query.XuguQueryHeaderBuilder
+com.xugudb.shardingsphere.proxy.backend.xugu.response.header.query.XuguMySQLWireQueryHeaderBuilder

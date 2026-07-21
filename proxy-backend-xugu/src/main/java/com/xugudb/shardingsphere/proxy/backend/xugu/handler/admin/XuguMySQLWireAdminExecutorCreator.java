@@ -1,44 +1,44 @@
 package com.xugudb.shardingsphere.proxy.backend.xugu.handler.admin;
 
-import com.xugudb.shardingsphere.proxy.backend.xugu.handler.admin.executor.XuguSetVariableAdminExecutor;
-import com.xugudb.shardingsphere.proxy.backend.xugu.handler.admin.executor.XuguShowVariableExecutor;
+import com.xugudb.shardingsphere.proxy.backend.xugu.handler.admin.executor.XuguMySQLSystemVariableQueryExecutor;
+import com.xugudb.shardingsphere.proxy.backend.xugu.handler.admin.executor.XuguMySQLWireSetVariableAdminExecutor;
 import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
 import org.apache.shardingsphere.proxy.backend.handler.admin.executor.DatabaseAdminExecutor;
 import org.apache.shardingsphere.proxy.backend.handler.admin.executor.DatabaseAdminExecutorCreator;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.SQLStatement;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.type.dal.SetStatement;
-import org.apache.shardingsphere.sql.parser.statement.core.statement.type.dal.ShowStatement;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.type.dml.SelectStatement;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Database admin executor creator for XuGu storage-typed paths.
+ * MySQL-wire admin executor creator for Proxy when storage is XuGu.
  *
- * <p>MySQL-wire Connector/J probes are handled by {@link XuguMySQLWireAdminExecutorCreator}
- * ({@code getDatabaseType() = MySQL}).</p>
+ * <p>Proxy looks up {@link DatabaseAdminExecutorCreator} by the <em>frontend protocol</em>
+ * database type ({@code MySQL}), not the storage type. Without a MySQL-typed creator,
+ * Connector/J handshake {@code SELECT @@...} / {@code SET ...} is forwarded to XuGu and fails.</p>
+ *
+ * <p>This is intentionally <strong>not</strong> {@code proxy-backend-mysql}: storage dialect
+ * remains XuGu {@code compatiblemode=NONE}.</p>
  */
-public final class XuguAdminExecutorCreator implements DatabaseAdminExecutorCreator {
+public final class XuguMySQLWireAdminExecutorCreator implements DatabaseAdminExecutorCreator {
 
     @Override
     public Optional<DatabaseAdminExecutor> create(final SQLStatementContext sqlStatementContext, final String sql,
                                                   final String databaseName, final List<Object> parameters) {
         SQLStatement sqlStatement = sqlStatementContext.getSqlStatement();
         if (sqlStatement instanceof SelectStatement) {
-            return Optional.empty();
+            return XuguMySQLSystemVariableQueryExecutor.tryCreate((SelectStatement) sqlStatement, sql);
         }
         if (sqlStatement instanceof SetStatement) {
-            return Optional.of(new XuguSetVariableAdminExecutor((SetStatement) sqlStatement));
-        }
-        if (sqlStatement instanceof ShowStatement) {
-            return Optional.of(new XuguShowVariableExecutor((ShowStatement) sqlStatement));
+            return Optional.of(new XuguMySQLWireSetVariableAdminExecutor((SetStatement) sqlStatement));
         }
         return Optional.empty();
     }
 
     @Override
     public String getDatabaseType() {
-        return "XuGu";
+        return "MySQL";
     }
 }

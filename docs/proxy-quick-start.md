@@ -89,7 +89,7 @@ Edit `config-sharding.yaml`:
 
 - Replace `<DB0>` and `<DB1>` with existing XuGu DATABASE names (e.g. `shard_ds0`, `shard_ds1`)
 - Keep **`compatiblemode=NONE`** on every JDBC URL
-- Lab host defaults: `192.168.2.239:5138` / `SYSDBA` (see `tests-it/src/test/resources/it-xugu.properties`)
+- Lab host defaults: `192.168.2.239:5287` / `SYSDBA` (see `tests-it/src/test/resources/it-xugu.properties`; siblings `5288`/`5289`)
 
 Create physical `T_ORDER` tables on both databases before first client query.
 

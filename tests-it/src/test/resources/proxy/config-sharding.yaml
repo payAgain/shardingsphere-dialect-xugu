@@ -38,6 +38,3 @@ rules:
       type: INLINE
       props:
         algorithm-expression: ds_${user_id % 2}
-
-props:
-  sql-show: true

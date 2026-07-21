@@ -15,6 +15,9 @@ authority:
     type: ALL_PERMITTED
 
 props:
+  # Wire = MySQL even when storage units are XuGu (NONE). Without this, Proxy
+  # derives the frontend protocol from storage type and fails (no XuGu wire SPI).
+  proxy-frontend-database-protocol-type: MySQL
   max-connections-size-per-query: 1
   kernel-executor-size: 8
   proxy-frontend-flush-threshold: 128

@@ -7,7 +7,7 @@ databaseName: logic_db
 
 dataSources:
   ds_0:
-    url: jdbc:xugu://192.168.2.239:5138/<DB0>?compatiblemode=NONE&charset=UTF8
+    url: jdbc:xugu://192.168.2.239:5287/<DB0>?compatiblemode=NONE&charset=UTF8
     username: SYSDBA
     password: SYSDBA
     connectionTimeoutMilliseconds: 30000
@@ -16,7 +16,7 @@ dataSources:
     maxPoolSize: 50
     minPoolSize: 2
   ds_1:
-    url: jdbc:xugu://192.168.2.239:5138/<DB1>?compatiblemode=NONE&charset=UTF8
+    url: jdbc:xugu://192.168.2.239:5287/<DB1>?compatiblemode=NONE&charset=UTF8
     username: SYSDBA
     password: SYSDBA
     connectionTimeoutMilliseconds: 30000
@@ -41,6 +41,3 @@ rules:
       type: INLINE
       props:
         algorithm-expression: ds_${user_id % 2}
-
-props:
-  sql-show: true

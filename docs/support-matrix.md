@@ -16,7 +16,7 @@ This matrix is the **external** capability whitelist for G-004 hardening. SPI-le
 | Assumption | Requirement | Notes |
 |---|---|---|
 | Compatible mode | **`compatiblemode=NONE` only** | Dialect default query props force NONE; other XuGu modes are out of product scope |
-| Topology | **Single lab / single-host** simulation | Default IT host `192.168.2.239:5138` (`tests-it/.../it-xugu.properties`) |
+| Topology | **Single lab / single-host** simulation | Default IT host `192.168.2.239:5287` (`tests-it/.../it-xugu.properties`; siblings `5288`/`5289`) |
 | Driver | `com.xugudb:xugu-jdbc` **12.3.6** | Install into local `.m2` before build/consume |
 | Runtime surface | **ShardingSphere JDBC** + dialect JAR on classpath **or** **Proxy 5.5.3** + XuGu dialect aggregate in `ext-lib/` | Proxy: MySQL wire frontend only; storage/dialect = XuGu NONE (see [proxy-quick-start.md](proxy-quick-start.md)) |
 | Identifiers | Unquoted → **UPPER_CASE** physical names | Logic tables may be lowercase; physical nodes often `BASELINE_*` / `T_ORDER` style |
@@ -44,7 +44,7 @@ Capabilities below are **in product scope** and have dialect SPI and/or baseline
 | **PL/SQL object surface (subset)** | Supported | PROCEDURE·FUNCTION·TRIGGER·PACKAGE CREATE/ALTER/DROP + CALL | [ddl-plsql-coverage.md](ddl-plsql-coverage.md); not full PL/SQL language |
 | **Federation stubs** | Supported (stubs) | Federation connection config + safe-empty `FunctionRegister` + `ColumnTypeConverter` | Not a claim of full federated SQL workload coverage |
 | **SQLException mapping** | Supported (baseline) | `XuguSQLDialectExceptionMapper` present | Broader error-code map = G-004 P1-4 |
-| **ShardingSphere Proxy** | Supported (whitelist) | **Wire protocol = MySQL** (`frontend-mysql`); **storage / dialect = XuGu `compatiblemode=NONE`** via `proxy-backend-xugu` + JDBC dialect stack — **not** OSS trunk MySQL parser/backend path | [proxy-quick-start.md](proxy-quick-start.md) · embedded IT `-Pproxy` (`MySQLProxyShardingCrudIT`); live lab IT **BLOCKED_ENV** (XuGu `:5138` down as of P-003) — modules + harness present; **do not claim unverified production SLA** until lab CRUD re-runs green |
+| **ShardingSphere Proxy** | Supported (whitelist) | **Wire protocol = MySQL** (`frontend-mysql`); **storage / dialect = XuGu `compatiblemode=NONE`** via `proxy-backend-xugu` + JDBC dialect stack — **not** OSS trunk MySQL parser/backend path | [proxy-quick-start.md](proxy-quick-start.md) · embedded IT `-Pproxy` (`MySQLProxyShardingCrudIT`) against lab `:5287`; **do not claim unverified production SLA** beyond evidenced CRUD |
 
 ---
 

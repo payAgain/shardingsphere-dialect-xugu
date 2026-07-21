@@ -1,12 +1,14 @@
 # Release Notes — `5.5.3-xugu`
 
 **Date:** 2026-07-20  
+**Republished:** 2026-07-21（Trellis 托管工程后重建制品并覆盖 GitHub Release）  
 **Artifact:** `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu:5.5.3-xugu`  
 **Upstream:** Apache ShardingSphere JDBC `5.5.3`  
 **Driver:** `com.xugudb:xugu-jdbc:12.3.6`  
-**Compatible mode:** **`compatiblemode=NONE` only**
+**Compatible mode:** **`compatiblemode=NONE` only**  
+**Workflow:** 本仓库由 **Trellis**（`.trellis/`）管理；已退役 `E:\Work\java\sharding` harness / Superpowers 执行框架。
 
-This is a **local-install** release prep bump (consumer path: `mvn clean install`). Tag / push / GitHub Release remain Human Ship gates.
+This is a **local-install** / GitHub Release assets distribution. Maven Central / GitHub Packages may be unavailable depending on credentials.
 
 **Coordinate relocate (2026-07-21):** human gate set Maven version from frozen `5.5.3-xugu.2` → **`5.5.3-xugu`** (same artifacts; trailing `.2` removed). Upstream Apache SS remains **`5.5.3`**.
 

@@ -1,0 +1,13 @@
+---
+description: Trellis is the only workflow for shardingsphere-dialect-xugu.
+alwaysApply: true
+---
+
+# Trellis Only
+
+This repository is managed solely by **Trellis** (`.trellis/`, project Cursor skills/hooks).
+
+- Do **not** use `superpowers:*` skills or the former `E:\Work\java\sharding` harness.
+- Tasks live under `.trellis/tasks/`.
+- Coding rules: `.trellis/spec/`.
+- Compatible mode: `NONE` only; `DatabaseType=XuGu` with no MySQL trunk.

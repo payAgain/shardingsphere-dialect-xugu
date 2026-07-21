@@ -1,7 +1,7 @@
 # XuGu × ShardingSphere Production Support Matrix
 
 > **Audience:** consumers evaluating dialect readiness for general production  
-> **Release:** 5.5.3-xugu.2 · notes: [RELEASE-NOTES-5.5.3-xugu.2.md](RELEASE-NOTES-5.5.3-xugu.2.md)  
+> **Release:** 5.5.3-xugu · notes: [RELEASE-NOTES-5.5.3-xugu.md](RELEASE-NOTES-5.5.3-xugu.md)  
 > **Upstream:** Apache ShardingSphere JDBC `5.5.3`  
 > **Dialect:** XuGu native JDBC (`getDatabaseType() == "XuGu"`)  
 > **Date:** 2026-07-20  
@@ -93,7 +93,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | Boundary / failure / concurrency per scenario | P0-1 | In progress / catalog lists ≥3 tests per B*; keep evidence current |
 | True same-host read DS routing + privilege deepen | P0-2 / G-005 T3=A / G-006 Q-05a | Different-DATABASE routing + restricted read user deny/cleanup ([topology-same-host.md](topology-same-host.md)); **never** claim physical replica |
 | This support matrix | P0-3 | This document |
-| Version 5.5.3-xugu.2 + release notes with known gaps | P0-4 | This release (RELEASE-NOTES-5.5.3-xugu.2.md) |
+| Version 5.5.3-xugu + release notes with known gaps | P0-4 | This release (RELEASE-NOTES-5.5.3-xugu.md) |
 | XA recovery (kill TM / interrupt / timeout) | P1-1 / G-005 T2 / G-006 Q-01/Q-02 | Prepare-then-kill **medium**; timeout **CLOSED_AS_DEFER**; Strong recover **BLOCKED** ([xa-recovery-evidence.md](xa-recovery-evidence.md): `NO_IN_DOUBT_AFTER_TM_KILL`) |
 | Load + fault injection report | P1-2 | Not claimed |
 | Second namespace / weak second env | P1-3 | Same host only; not multi-site |
@@ -111,7 +111,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 | [parity-matrix.md](parity-matrix.md) | SPI PASS · DEFER (design §3.2 / G-003) |
 | [baseline-catalog.md](baseline-catalog.md) | B1–B7 classes, YAML, how to run |
 | [quick-start.md](quick-start.md) | ≈30-min JDBC consumer install path |
-| [proxy-quick-start.md](proxy-quick-start.md) | Proxy: MySQL wire → XuGu NONE storage (`5.5.3-xugu.2`) |
+| [proxy-quick-start.md](proxy-quick-start.md) | Proxy: MySQL wire → XuGu NONE storage (`5.5.3-xugu`) |
 | [pagination-decision.md](pagination-decision.md) | LIMIT vs ROWNUM probe → LIMIT |
 | [g003-acceptance.md](g003-acceptance.md) | Prior Goal Accept (baseline + DEFER clearance) |
 | [topology-same-host.md](topology-same-host.md) | T3=A / Q-05a same-host deepen + Q-05b BLOCKED_ENV |

@@ -1,4 +1,4 @@
-# Proxy Quick Start — XuGu dialect `5.5.3-xugu.2`
+# Proxy Quick Start — XuGu dialect `5.5.3-xugu`
 
 Goal: run **Apache ShardingSphere-Proxy 5.5.3** with the XuGu dialect aggregate, accepting **MySQL wire** clients while storing data in **XuGu `compatiblemode=NONE`**.
 
@@ -41,7 +41,7 @@ From the dialect repo root:
   clean install "-DskipITs"
 ```
 
-Key coordinates (version **`5.5.3-xugu.2`**):
+Key coordinates (version **`5.5.3-xugu`**):
 
 | Artifact | Role |
 |---|---|
@@ -157,4 +157,4 @@ Embedded Proxy IT (no external Proxy distribution required): MySQL JDBC → in-p
 
 ## Version lock
 
-This quick-start targets dialect release **`5.5.3-xugu.2`** against upstream Proxy **`5.5.3`**. Do not mix other SS minor versions without re-validation.
+This quick-start targets dialect release **`5.5.3-xugu`** against upstream Proxy **`5.5.3`**. Do not mix other SS minor versions without re-validation.

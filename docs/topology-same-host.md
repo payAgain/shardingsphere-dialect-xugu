@@ -1,6 +1,6 @@
 # Same-host topology (T3=A / G-006 Q-05a)
 
-> **Release:** 5.5.3-xugu.2（frozen）  
+> **Release:** 5.5.3-xugu（frozen）  
 > **Goal:** G-005 T3=A · G-006 Q-05a L2 harden  
 > **Lab:** `192.168.2.239:5138` · `SYSDBA` · `compatiblemode=NONE`
 

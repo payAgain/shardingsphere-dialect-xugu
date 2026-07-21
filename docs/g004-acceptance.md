@@ -3,7 +3,7 @@
 **Date:** 2026-07-20  
 **Repo:** `shardingsphere-dialect-xugu`  
 **HEAD:** `d730524`（功能 tip `f79af9e`）  
-**Version:** `5.5.3-xugu.2`  
+**Version:** `5.5.3-xugu`  
 **Spec:** `sharding/docs/superpowers/specs/2026-07-20-xugu-production-hardening-p0-p1-design.md`  
 **Plan:** `sharding/docs/superpowers/plans/2026-07-20-xugu-production-hardening-p0-p1.md`
 
@@ -20,7 +20,7 @@
 | P0-1 | B1–B7 扩测（happy / boundary / concurrency） | PASS | SHA `74d98c6` · `-Pbaseline` **21→22** tests（含 P0-2 路由用例） |
 | P0-2 | 同机不同 DATABASE 读写路由断言 | PASS | SHA `d5523c3` · 非物理副本，见 catalog |
 | P0-3 | 支持矩阵 | PASS | `docs/support-matrix.md` · SHA `8284601` |
-| P0-4 | 发版 `5.5.3-xugu.2` + release notes | PASS | SHA `3584365` · `docs/RELEASE-NOTES-5.5.3-xugu.2.md`（未 tag/push） |
+| P0-4 | 发版 `5.5.3-xugu` + release notes | PASS | SHA `3584365` · `docs/RELEASE-NOTES-5.5.3-xugu.md`（未 tag/push） |
 
 ## P1
 

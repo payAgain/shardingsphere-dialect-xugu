@@ -3,7 +3,7 @@
 **Date:** 2026-07-20  
 **Branch:** `feat/g006-q01-q05`  
 **HEAD:** `25e9f23`  
-**Version (frozen):** `5.5.3-xugu.2`  
+**Version (frozen):** `5.5.3-xugu`  
 **Spec:** `sharding/docs/superpowers/specs/2026-07-20-xugu-q01-q05-completion-design.md`
 
 ## Constraints
@@ -29,7 +29,7 @@
 |---|---|
 | `-Pbaseline` | **24/24** PASS |
 | `-Pxa-recovery` | **5/5** PASS |
-| Version | `5.5.3-xugu.2` |
+| Version | `5.5.3-xugu` |
 
 ## Still must not claim
 

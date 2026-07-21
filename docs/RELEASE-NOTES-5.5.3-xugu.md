@@ -1,12 +1,14 @@
-# Release Notes — `5.5.3-xugu.2`
+# Release Notes — `5.5.3-xugu`
 
 **Date:** 2026-07-20  
-**Artifact:** `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu:5.5.3-xugu.2`  
+**Artifact:** `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu:5.5.3-xugu`  
 **Upstream:** Apache ShardingSphere JDBC `5.5.3`  
 **Driver:** `com.xugudb:xugu-jdbc:12.3.6`  
 **Compatible mode:** **`compatiblemode=NONE` only**
 
 This is a **local-install** release prep bump (consumer path: `mvn clean install`). Tag / push / GitHub Release remain Human Ship gates.
+
+**Coordinate relocate (2026-07-21):** human gate set Maven version from frozen `5.5.3-xugu.2` → **`5.5.3-xugu`** (same artifacts; trailing `.2` removed). Upstream Apache SS remains **`5.5.3`**.
 
 ---
 
@@ -25,7 +27,7 @@ This is a **local-install** release prep bump (consumer path: `mvn clean install
 | **P0-1** | B1–B7 expanded with boundary / empty / duplicate-key and concurrency smoke cases |
 | **P0-2** | Same-host **read DS routing isolation** asserts (different DATABASE on one host — not a physical replica) |
 | **P0-3** | Production [support-matrix.md](support-matrix.md) published |
-| **P0-4** | Version bump **`5.5.3-xugu.1` → `5.5.3-xugu.2`** + these notes |
+| **P0-4** | Version bump **`5.5.3-xugu.1` → `5.5.3-xugu`** + these notes |
 
 ### Support matrix
 
@@ -41,7 +43,7 @@ Readwrite-splitting (B2) now asserts that read traffic can be isolated to a **sa
 
 | Artifact | Version |
 |---|---|
-| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | `5.5.3-xugu.2` |
+| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | `5.5.3-xugu` |
 | Upstream `org.apache.shardingsphere:shardingsphere-jdbc` | `5.5.3` |
 | XuGu driver `com.xugudb:xugu-jdbc` | `12.3.6` |
 
@@ -49,7 +51,7 @@ Readwrite-splitting (B2) now asserts that read traffic can be isolated to a **sa
 <dependency>
   <groupId>com.xugudb.shardingsphere</groupId>
   <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
-  <version>5.5.3-xugu.2</version>
+  <version>5.5.3-xugu</version>
 </dependency>
 ```
 
@@ -73,7 +75,7 @@ See also [support-matrix.md](support-matrix.md) §3 / §5 and [parity-matrix.md]
 
 ## Upgrade from `5.5.3-xugu.1`
 
-1. Change dependency version to `5.5.3-xugu.2`.
+1. Change dependency version to `5.5.3-xugu`.
 2. Keep JDBC URLs / props with **`compatiblemode=NONE`**.
 3. Re-run baseline or smoke IT against your lab host if you rely on B1–B7 evidence.
 4. Do not assume XA recovery or multi-site HA from this bump alone.

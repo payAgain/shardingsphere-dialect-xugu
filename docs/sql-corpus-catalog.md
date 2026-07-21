@@ -4,7 +4,7 @@
 **Lab:** `jdbc:xugu://192.168.2.239:5138/…` (isolated DATABASE prefix `corpus_*`)  
 **Runner:** `tests-it/.../corpus/SqlCorpusIT.java` · Maven profile `-Psql-corpus`  
 **Source of truth (machine):** `tests-it/src/test/resources/corpus/corpus-cases.tsv`  
-**Version:** `5.5.3-xugu.2` (frozen)
+**Version:** `5.5.3-xugu` (frozen)
 
 ## Gates
 

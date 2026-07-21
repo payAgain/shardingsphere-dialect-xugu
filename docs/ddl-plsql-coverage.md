@@ -1,6 +1,6 @@
 # Cold DDL + PL/SQL coverage (G-006 Q-04)
 
-> Lab: XuGu `compatiblemode=NONE` · Version frozen `5.5.3-xugu.2`  
+> Lab: XuGu `compatiblemode=NONE` · Version frozen `5.5.3-xugu`  
 > IT: `mvn test -Pddl-plsql` · Class: `DdlPlsqlCoverageIT`  
 > Observed: **Supported=36 · DEFER=4** (2026-07-20)
 

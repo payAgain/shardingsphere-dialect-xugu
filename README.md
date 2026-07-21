@@ -1,15 +1,15 @@
 # shardingsphere-dialect-xugu
 
-Apache ShardingSphere **XuGu native JDBC dialect** plugin for **5.5.3**, released as **`5.5.3-xugu.2`**.
+Apache ShardingSphere **XuGu native JDBC dialect** plugin for **5.5.3**, released as **`5.5.3-xugu`**.
 
 **Start here:** [docs/quick-start.md](docs/quick-start.md) (≈30-minute JDBC path) · **Proxy:** [docs/proxy-quick-start.md](docs/proxy-quick-start.md) (MySQL wire → XuGu NONE storage).
-**Support matrix:** [docs/support-matrix.md](docs/support-matrix.md) · **Release notes:** [docs/RELEASE-NOTES-5.5.3-xugu.2.md](docs/RELEASE-NOTES-5.5.3-xugu.2.md).
+**Support matrix:** [docs/support-matrix.md](docs/support-matrix.md) · **Release notes:** [docs/RELEASE-NOTES-5.5.3-xugu.md](docs/RELEASE-NOTES-5.5.3-xugu.md).
 
 ## Release coordinates
 
 | Artifact | Version |
 |---|---|
-| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | `5.5.3-xugu.2` |
+| `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu` | `5.5.3-xugu` |
 | Upstream `org.apache.shardingsphere:shardingsphere-jdbc` | `5.5.3` |
 | XuGu driver `com.xugudb:xugu-jdbc` | `12.3.6` (install into local `.m2` first) |
 
@@ -17,7 +17,7 @@ Apache ShardingSphere **XuGu native JDBC dialect** plugin for **5.5.3**, release
 <dependency>
   <groupId>com.xugudb.shardingsphere</groupId>
   <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
-  <version>5.5.3-xugu.2</version>
+  <version>5.5.3-xugu</version>
 </dependency>
 ```
 
@@ -65,7 +65,7 @@ C:\Users\admin\tools\apache-maven-3.9.9\bin\mvn.cmd -pl tests-it -am test -Pit-x
 | [docs/quick-start.md](docs/quick-start.md) | 30-min JDBC consumer path |
 | [docs/proxy-quick-start.md](docs/proxy-quick-start.md) | Proxy: MySQL wire frontend → XuGu NONE storage |
 | [docs/support-matrix.md](docs/support-matrix.md) | Production support matrix (whitelist + known limits) |
-| [docs/RELEASE-NOTES-5.5.3-xugu.2.md](docs/RELEASE-NOTES-5.5.3-xugu.2.md) | 5.5.3-xugu.2 release notes |
+| [docs/RELEASE-NOTES-5.5.3-xugu.md](docs/RELEASE-NOTES-5.5.3-xugu.md) | 5.5.3-xugu release notes |
 | [docs/examples/sharding-two-ds.yaml](docs/examples/sharding-two-ds.yaml) | Dual-DS sharding YAML (placeholders) |
 | [docs/m0-m1-acceptance.md](docs/m0-m1-acceptance.md) | M0–M1 acceptance (connector + parser + NativeCrudIT) |
 | [docs/m2-acceptance.md](docs/m2-acceptance.md) | M2 acceptance (route/rewrite + ShardingCrudIT) |

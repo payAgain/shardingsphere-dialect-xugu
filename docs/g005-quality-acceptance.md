@@ -4,7 +4,7 @@
 **Repo:** `shardingsphere-dialect-xugu`  
 **Branch:** `feat/g005-quality-completion`  
 **HEAD:** `112b64a`  
-**Version (frozen):** `5.5.3-xugu.2`  
+**Version (frozen):** `5.5.3-xugu`  
 **Spec:** `sharding/docs/superpowers/specs/2026-07-20-xugu-quality-completion-design.md`
 
 ## Constraints
@@ -27,7 +27,7 @@
 |---|---|
 | `-Pbaseline` | **23/23** PASS（含 T3 B2 加深用例） |
 | `-Pxa-recovery` | **4/4** PASS |
-| Version | all poms `5.5.3-xugu.2` |
+| Version | all poms `5.5.3-xugu` |
 
 ## Still must not claim
 

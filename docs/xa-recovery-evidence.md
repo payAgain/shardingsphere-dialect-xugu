@@ -90,7 +90,7 @@ Flow:
 ### Run metadata
 
 - Host: `192.168.2.239:5138` / `SYSDBA` / `compatiblemode=NONE`
-- Version frozen: `5.5.3-xugu.2`
+- Version frozen: `5.5.3-xugu`
 - IT: `mvn -pl tests-it test "-Pxa-recovery"` → **Tests run: 5, Failures: 0** (G-006 Q-01)
 - Strong script log: `tests-it/logs/xa-recovery-strong.log` (+ `-recover.log`)
 - Medium script log: `tests-it/logs/xa-recovery-kill-client.log` (+ probe log)

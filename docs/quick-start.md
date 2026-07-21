@@ -57,7 +57,7 @@ Published locally (among others):
 </dependencies>
 ```
 
-The dialect registers via Java SPI on the classpath — no MySQL trunk, no Proxy module.
+The dialect registers via Java SPI on the classpath — no MySQL trunk. (For **Proxy**, see [proxy-quick-start.md](proxy-quick-start.md); this JDBC path does not require a Proxy distribution.)
 
 ## 4. YAML dual-DS example
 
@@ -107,6 +107,6 @@ Run a minimal CRUD against logical table `t_order` (shard key `user_id`) with `s
 
 ## Scope reminders
 
-- **Supported:** JDBC dialect, `compatiblemode=NONE`, sharding CRUD + LIMIT pagination
-- **Not in scope:** ShardingSphere Proxy, MySQL trunk fallback, other XuGu compatible modes
-- Capability matrix: [`parity-matrix.md`](parity-matrix.md) · Pagination: [`pagination-decision.md`](pagination-decision.md)
+- **Supported:** JDBC dialect, **Proxy (MySQL wire → XuGu NONE)**, `compatiblemode=NONE`, sharding CRUD + LIMIT pagination
+- **Not in scope:** OSS trunk MySQL Proxy path, MySQL trunk fallback, other XuGu compatible modes
+- Proxy path: [`proxy-quick-start.md`](proxy-quick-start.md) · Capability matrix: [`parity-matrix.md`](parity-matrix.md) · Pagination: [`pagination-decision.md`](pagination-decision.md)

@@ -65,7 +65,7 @@ Readwrite-splitting (B2) now asserts that read traffic can be isolated to a **sa
 | **SHOW DAL / `DialectShardingDALResultMerger`** | **DEFER** (no MySQL-style SHOW surface under NONE) |
 | **Full PL/SQL / cold DDL parser** | **DEFER** (expand only as baseline SQL requires) |
 | **`compatiblemode=NONE` only** | Other XuGu compatible modes and MySQL-trunk fallback are out of scope |
-| **ShardingSphere Proxy** | Not supported (JDBC dialect product only) |
+| **ShardingSphere Proxy** | **Supported (whitelist)** — MySQL wire frontend, XuGu `compatiblemode=NONE` storage; not OSS trunk path ([proxy-quick-start.md](proxy-quick-start.md); live IT pending lab recovery) |
 
 See also [support-matrix.md](support-matrix.md) §3 / §5 and [parity-matrix.md](parity-matrix.md).
 

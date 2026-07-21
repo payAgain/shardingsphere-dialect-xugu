@@ -18,7 +18,7 @@ This matrix is the **external** capability whitelist for G-004 hardening. SPI-le
 | Compatible mode | **`compatiblemode=NONE` only** | Dialect default query props force NONE; other XuGu modes are out of product scope |
 | Topology | **Single lab / single-host** simulation | Default IT host `192.168.2.239:5138` (`tests-it/.../it-xugu.properties`) |
 | Driver | `com.xugudb:xugu-jdbc` **12.3.6** | Install into local `.m2` before build/consume |
-| Runtime surface | **ShardingSphere JDBC** + dialect JAR on classpath | No Proxy module in this product |
+| Runtime surface | **ShardingSphere JDBC** + dialect JAR on classpath **or** **Proxy 5.5.3** + XuGu dialect aggregate in `ext-lib/` | Proxy: MySQL wire frontend only; storage/dialect = XuGu NONE (see [proxy-quick-start.md](proxy-quick-start.md)) |
 | Identifiers | Unquoted → **UPPER_CASE** physical names | Logic tables may be lowercase; physical nodes often `BASELINE_*` / `T_ORDER` style |
 
 If a host is unreachable, baseline ITs **Assumption-skip** (not fail). Skip ≠ production evidence.
@@ -44,6 +44,7 @@ Capabilities below are **in product scope** and have dialect SPI and/or baseline
 | **PL/SQL object surface (subset)** | Supported | PROCEDURE·FUNCTION·TRIGGER·PACKAGE CREATE/ALTER/DROP + CALL | [ddl-plsql-coverage.md](ddl-plsql-coverage.md); not full PL/SQL language |
 | **Federation stubs** | Supported (stubs) | Federation connection config + safe-empty `FunctionRegister` + `ColumnTypeConverter` | Not a claim of full federated SQL workload coverage |
 | **SQLException mapping** | Supported (baseline) | `XuguSQLDialectExceptionMapper` present | Broader error-code map = G-004 P1-4 |
+| **ShardingSphere Proxy** | Supported (whitelist) | **Wire protocol = MySQL** (`frontend-mysql`); **storage / dialect = XuGu `compatiblemode=NONE`** via `proxy-backend-xugu` + JDBC dialect stack — **not** OSS trunk MySQL parser/backend path | [proxy-quick-start.md](proxy-quick-start.md) · embedded IT `-Pproxy` (`MySQLProxyShardingCrudIT`); live lab IT **BLOCKED_ENV** (XuGu `:5138` down as of P-003) — modules + harness present; **do not claim unverified production SLA** until lab CRUD re-runs green |
 
 ---
 
@@ -53,7 +54,7 @@ Do **not** enable, document as supported, or invent no-op SPIs for these items.
 
 | Item | Classification | Reason |
 |---|---|---|
-| **ShardingSphere Proxy** | NOT supported | Product is JDBC dialect only ([README](../README.md) / quick-start) |
+| **OSS trunk MySQL Proxy path** | NOT supported | Do **not** use `proxy-backend-mysql` / MySQL-trunk parser as storage; XuGu dialect aggregate only ([proxy-quick-start.md](proxy-quick-start.md)) |
 | **MySQL / Oracle / PostgreSQL compatible modes** | NOT supported | Only `compatiblemode=NONE`; no MySQL-trunk fallback or other-mode dialect branch |
 | **`DialectDatabasePrivilegeChecker`** | DEFER | XuGu privilege model not mapped to SS checker API; inventing a no-op checker is forbidden ([parity-matrix.md](parity-matrix.md)) |
 | **`DialectShardingDALResultMerger` (SHOW DAL)** | DEFER | NONE mode has no MySQL-style SHOW DAL product surface |
@@ -109,7 +110,8 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 |---|---|
 | [parity-matrix.md](parity-matrix.md) | SPI PASS · DEFER (design §3.2 / G-003) |
 | [baseline-catalog.md](baseline-catalog.md) | B1–B7 classes, YAML, how to run |
-| [quick-start.md](quick-start.md) | ≈30-min consumer install path |
+| [quick-start.md](quick-start.md) | ≈30-min JDBC consumer install path |
+| [proxy-quick-start.md](proxy-quick-start.md) | Proxy: MySQL wire → XuGu NONE storage (`5.5.3-xugu.2`) |
 | [pagination-decision.md](pagination-decision.md) | LIMIT vs ROWNUM probe → LIMIT |
 | [g003-acceptance.md](g003-acceptance.md) | Prior Goal Accept (baseline + DEFER clearance) |
 | [topology-same-host.md](topology-same-host.md) | T3=A / Q-05a same-host deepen + Q-05b BLOCKED_ENV |
@@ -122,7 +124,7 @@ Relative to “一般业务生产可用” under controlled assumptions (G-004 p
 
 | Category | Items |
 |---|---|
-| **Supported** | JDBC dialect · sharding · same-host readwrite (topology caveats) · local TX+savepoint · XA wrapper (happy-path) · encrypt · LIMIT pagination · batch · cold DDL subset · PL/SQL object surface subset · federation stubs · baseline ExceptionMapper |
-| **NOT supported** | Proxy · MySQL/Oracle/PG compat modes · multi-machine / physical replica · MySQL trunk fallback |
+| **Supported** | JDBC dialect · **Proxy (MySQL wire → XuGu NONE; not OSS trunk path)** · sharding · same-host readwrite (topology caveats) · local TX+savepoint · XA wrapper (happy-path) · encrypt · LIMIT pagination · batch · cold DDL subset · PL/SQL object surface subset · federation stubs · baseline ExceptionMapper |
+| **NOT supported** | OSS trunk MySQL Proxy path · MySQL/Oracle/PG compat modes · multi-machine / physical replica · MySQL trunk fallback |
 | **DEFER / CLOSED_AS_DEFER** | PrivilegeChecker · SHOW DAL merger · full PL/SQL language / Oracle-only DDL forms (see ddl-plsql-coverage) · XA RM timeout (`setTransactionTimeout`, CLOSED_AS_DEFER) |
 | **Hardening open** | P1-1..P1-4 (XA recovery · load/fault · env2 · ExceptionMapper map) |

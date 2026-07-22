@@ -38,3 +38,36 @@ Init Trellis in dialect repo, rebuild jars, force-update tag/release v5.5.3-xugu
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Bootstrap verified + republish v5.5.3-xugu
+
+**Date**: 2026-07-22
+**Task**: Bootstrap verified + republish v5.5.3-xugu
+**Branch**: `main`
+
+### Summary
+
+Confirmed Trellis bootstrap specs archived; rebuilt packages; moved tag and recreated GitHub Release v5.5.3-xugu with fresh assets.
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b75e0c9` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

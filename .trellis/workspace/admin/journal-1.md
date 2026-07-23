@@ -71,3 +71,36 @@ Confirmed Trellis bootstrap specs archived; rebuilt packages; moved tag and recr
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Fix release assets and republish v5.5.3-xugu
+
+**Date**: 2026-07-23
+**Task**: Fix release assets and republish v5.5.3-xugu
+**Branch**: `main`
+
+### Summary
+
+按黑盒验收修复 Release ZIP（纳入 parent/模块 POM）、安装脚本与 Quick Start/Proxy 文档；推送 main，强制更新 tag 并上传 27 个 Assets；临时 m2 安装+dependency:resolve 冒烟通过。
+
+### Main Changes
+
+- Detailed change bullets were not supplied; see the summary above.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e4f5ee2` | (see git log) |
+
+### Testing
+
+- Validation was not recorded for this session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

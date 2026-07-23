@@ -1,6 +1,9 @@
 # Dual-datasource database sharding — XuGu native dialect (classpath SPI)
 # Only compatiblemode=NONE is supported. Replace placeholders before use.
 # XuGu IdentifierPatternType=UPPER_CASE; physical names stored uppercase.
+# DB0/DB1 must be distinct DATABASE names — do not point both (or three ports) at SYSTEM.
+# Requires HikariCP + Memory mode repository + simple authority on the app classpath
+# (see docs/quick-start.md §3).
 databaseName: logic_db
 
 mode:

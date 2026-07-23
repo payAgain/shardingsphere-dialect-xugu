@@ -39,25 +39,17 @@ App (MySQL JDBC) --MySQL wire--> Proxy frontend-mysql
 
 ### 消费者常用依赖（JDBC）
 
+方言核心：
+
 ```xml
-<dependencies>
-  <dependency>
-    <groupId>org.apache.shardingsphere</groupId>
-    <artifactId>shardingsphere-jdbc</artifactId>
-    <version>5.5.3</version>
-  </dependency>
-  <dependency>
-    <groupId>com.xugudb.shardingsphere</groupId>
-    <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
-    <version>5.5.3-xugu</version>
-  </dependency>
-  <dependency>
-    <groupId>com.xugudb</groupId>
-    <artifactId>xugu-jdbc</artifactId>
-    <version>12.3.6</version>
-  </dependency>
-</dependencies>
+<dependency>
+  <groupId>com.xugudb.shardingsphere</groupId>
+  <artifactId>shardingsphere-jdbc-dialect-xugu</artifactId>
+  <version>5.5.3-xugu</version>
+</dependency>
 ```
+
+跑通仓库示例 YAML（Memory 模式 + Hikari）时，还需要 `shardingsphere-jdbc`、`standalone-mode-repository-memory`、`authority-simple`、`infra-data-source-pool-hikari`、`HikariCP` 等——完整清单见 [docs/quick-start.md](docs/quick-start.md) §3。
 
 `shardingsphere-jdbc-dialect-xugu` 会传递依赖 connector / parser / binder / route / rewrite / sharding / federation / transaction / exception 等模块。
 
@@ -65,7 +57,7 @@ App (MySQL JDBC) --MySQL wire--> Proxy frontend-mysql
 
 | 渠道 | 说明 |
 |---|---|
-| **GitHub Release 附件（默认）** | 在 [Releases](https://github.com/payAgain/shardingsphere-dialect-xugu/releases) 下载模块 JAR 或 `shardingsphere-dialect-xugu-5.5.3-xugu-jars.zip`，再安装到 `.m2` 或放入应用 `lib/` / Proxy `ext-lib/` |
+| **GitHub Release 附件（默认）** | 下载 `shardingsphere-dialect-xugu-5.5.3-xugu-jars.zip`（含 **parent POM** + 模块 JAR/POM），用 `scripts/install-release-assets.ps1` 安装到 `.m2`；或放入 Proxy `ext-lib/` |
 | **GitHub Packages** | 父 POM 已配置 `distributionManagement`；需具备 `write:packages` 的 PAT 执行 `mvn -Pgithub-packages deploy`。当前默认发布以 Release 附件为准 |
 | **本地构建** | `mvn -DskipITs clean install` 安装到本机 `.m2` |
 | **Maven Central** | 未配置 Sonatype；本版本不走 Central |
@@ -87,16 +79,15 @@ App (MySQL JDBC) --MySQL wire--> Proxy frontend-mysql
 
 #### 从 Release 附件安装示例
 
+**不要**只对单个 dialect JAR 执行一次 `install-file`（模块 POM 继承 parent，缺 parent 会解析失败）。推荐：
+
 ```powershell
-mvn install:install-file `
-  -Dfile=shardingsphere-jdbc-dialect-xugu-5.5.3-xugu.jar `
-  -DgroupId=com.xugudb.shardingsphere `
-  -DartifactId=shardingsphere-jdbc-dialect-xugu `
-  -Dversion=5.5.3-xugu `
-  -Dpackaging=jar
+.\scripts\install-release-assets.ps1 `
+  -ZipPath path\to\shardingsphere-dialect-xugu-5.5.3-xugu-jars.zip `
+  -JdbcJar path\to\xugu-jdbc-12.3.6.jar
 ```
 
-（其他模块 JAR 同理；完整依赖树建议直接使用本仓库 `mvn install` 或 Release 中的模块集合。）
+或本地源码：`mvn -DskipITs clean install`。详情见 `dist/RELEASE-BODY.md`。
 
 ---
 
@@ -130,13 +121,16 @@ mvn install:install-file `
 - 可达的 XuGu 实例；JDBC URL **必须**带 **`compatiblemode=NONE`**
 
 ```powershell
-mvn install:install-file `
-  -Dfile=path\to\xugu-jdbc-12.3.6.jar `
-  -DgroupId=com.xugudb `
-  -DartifactId=xugu-jdbc `
-  -Dversion=12.3.6 `
-  -Dpackaging=jar
+mvn org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file `
+  "-Dfile=path\to\xugu-jdbc-12.3.6.jar" `
+  "-DgroupId=com.xugudb" `
+  "-DartifactId=xugu-jdbc" `
+  "-Dversion=12.3.6" `
+  "-Dpackaging=jar" `
+  "-DgeneratePom=true"
 ```
+
+（驱动 JAR 内嵌 POM 可能仍写 `12.3.4`，必须以显式 `12.3.6` 安装。）
 
 ### 2. JDBC 路径
 

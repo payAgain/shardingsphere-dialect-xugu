@@ -2,6 +2,7 @@
 
 **Date:** 2026-07-20  
 **Republished:** 2026-07-21（Trellis 托管工程后重建制品并覆盖 GitHub Release）  
+**Doc/packaging fix:** 2026-07-23（黑盒验收反馈：Release ZIP 纳入 parent/模块 POM；Quick Start / Proxy 文档纠偏）  
 **Artifact:** `com.xugudb.shardingsphere:shardingsphere-jdbc-dialect-xugu:5.5.3-xugu`  
 **Upstream:** Apache ShardingSphere JDBC `5.5.3`  
 **Driver:** `com.xugudb:xugu-jdbc:12.3.6`  
@@ -69,7 +70,11 @@ Readwrite-splitting (B2) now asserts that read traffic can be isolated to a **sa
 | **SHOW DAL / `DialectShardingDALResultMerger`** | **DEFER** (no MySQL-style SHOW surface under NONE) |
 | **Full PL/SQL / cold DDL parser** | **DEFER** (expand only as baseline SQL requires) |
 | **`compatiblemode=NONE` only** | Other XuGu compatible modes and MySQL-trunk fallback are out of scope |
-| **ShardingSphere Proxy** | **Supported (whitelist)** — MySQL wire frontend, XuGu `compatiblemode=NONE` storage; not OSS trunk path ([proxy-quick-start.md](proxy-quick-start.md); live IT pending lab recovery) |
+| **ShardingSphere Proxy** | **Supported (whitelist)** — MySQL wire frontend (may need frontend `parser-sql-engine-mysql`), XuGu `compatiblemode=NONE` storage; forbid `proxy-backend-mysql` / `proxy-dialect-mysql` as storage ([proxy-quick-start.md](proxy-quick-start.md)) |
+| **Release ZIP install** | ZIP must include **parent POM** + module POMs; use `scripts/install-release-assets.ps1`. Single `install-file` of one JAR is insufficient |
+| **Driver GAV** | Install JDBC as **12.3.6** with `-DgeneratePom=true`; embedded driver POM may still say `12.3.4` |
+| **Cross-shard `COUNT(*)`** | Use explicit aliases (`COUNT(*) AS cnt`); bare aggregate labels may fail at merge bind |
+| **Multi-port `SYSTEM`** | `5287/5288/5289` are typically one cluster; shard with distinct DATABASE names, not three `SYSTEM` URLs |
 
 See also [support-matrix.md](support-matrix.md) §3 / §5 and [parity-matrix.md](parity-matrix.md).
 

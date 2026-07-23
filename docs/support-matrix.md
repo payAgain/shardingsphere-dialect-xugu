@@ -4,8 +4,8 @@
 > **Release:** 5.5.3-xugu · notes: [RELEASE-NOTES-5.5.3-xugu.md](RELEASE-NOTES-5.5.3-xugu.md)  
 > **Upstream:** Apache ShardingSphere JDBC `5.5.3`  
 > **Dialect:** XuGu native JDBC (`getDatabaseType() == "XuGu"`)  
-> **Date:** 2026-07-20  
-> **Related:** [parity-matrix.md](parity-matrix.md) · [baseline-catalog.md](baseline-catalog.md) · [quick-start.md](quick-start.md) · [pagination-decision.md](pagination-decision.md)
+> **Date:** 2026-07-23  
+> **Related:** [parity-matrix.md](parity-matrix.md) · [baseline-catalog.md](baseline-catalog.md) · [quick-start.md](quick-start.md) · [proxy-quick-start.md](proxy-quick-start.md) · [pagination-decision.md](pagination-decision.md)
 
 This matrix is the **external** capability whitelist for G-004 hardening. SPI-level PASS/DEFER detail lives in [parity-matrix.md](parity-matrix.md); do not treat this document as a claim of financial-grade XA, multi-site HA, or unlimited SQL coverage.
 
@@ -16,10 +16,11 @@ This matrix is the **external** capability whitelist for G-004 hardening. SPI-le
 | Assumption | Requirement | Notes |
 |---|---|---|
 | Compatible mode | **`compatiblemode=NONE` only** | Dialect default query props force NONE; other XuGu modes are out of product scope |
-| Topology | **Single lab / single-host** simulation | Default IT host `192.168.2.239:5287` (`tests-it/.../it-xugu.properties`; siblings `5288`/`5289`) |
-| Driver | `com.xugudb:xugu-jdbc` **12.3.6** | Install into local `.m2` before build/consume |
-| Runtime surface | **ShardingSphere JDBC** + dialect JAR on classpath **or** **Proxy 5.5.3** + XuGu dialect aggregate in `ext-lib/` | Proxy: MySQL wire frontend only; storage/dialect = XuGu NONE (see [proxy-quick-start.md](proxy-quick-start.md)) |
+| Topology | **Single lab / single-host** simulation | Default IT host `192.168.2.239:5287` (`tests-it/.../it-xugu.properties`; siblings `5288`/`5289` are usually **same-cluster entry points sharing `SYSTEM`**, not three physical shards). Sharding DS must use **distinct DATABASE** names |
+| Driver | `com.xugudb:xugu-jdbc` **12.3.6** | Install with **explicit** GAV (`-Dversion=12.3.6 -DgeneratePom=true`); some JARs embed Maven metadata still saying `12.3.4` |
+| Runtime surface | **ShardingSphere JDBC** + dialect JAR on classpath **or** **Proxy 5.5.3** + XuGu dialect aggregate in `ext-lib/` | Proxy: MySQL **wire** frontend; storage/dialect = XuGu NONE (see [proxy-quick-start.md](proxy-quick-start.md)) |
 | Identifiers | Unquoted → **UPPER_CASE** physical names | Logic tables may be lowercase; physical nodes often `BASELINE_*` / `T_ORDER` style |
+| Cross-shard aggregates | Prefer **explicit column aliases** | e.g. `SELECT COUNT(*) AS cnt …`; bare `COUNT(*)` may fail at merge/label bind |
 
 If a host is unreachable, baseline ITs **Assumption-skip** (not fail). Skip ≠ production evidence.
 
@@ -44,7 +45,7 @@ Capabilities below are **in product scope** and have dialect SPI and/or baseline
 | **PL/SQL object surface (subset)** | Supported | PROCEDURE·FUNCTION·TRIGGER·PACKAGE CREATE/ALTER/DROP + CALL | [ddl-plsql-coverage.md](ddl-plsql-coverage.md); not full PL/SQL language |
 | **Federation stubs** | Supported (stubs) | Federation connection config + safe-empty `FunctionRegister` + `ColumnTypeConverter` | Not a claim of full federated SQL workload coverage |
 | **SQLException mapping** | Supported (baseline) | `XuguSQLDialectExceptionMapper` present | Broader error-code map = G-004 P1-4 |
-| **ShardingSphere Proxy** | Supported (whitelist) | **Wire protocol = MySQL** (`frontend-mysql`); **storage / dialect = XuGu `compatiblemode=NONE`** via `proxy-backend-xugu` + JDBC dialect stack — **not** OSS trunk MySQL parser/backend path | [proxy-quick-start.md](proxy-quick-start.md) · embedded IT `-Pproxy` (`MySQLProxyShardingCrudIT`) against lab `:5287`; **do not claim unverified production SLA** beyond evidenced CRUD |
+| **ShardingSphere Proxy** | Supported (whitelist) | **Wire = MySQL** (`frontend-mysql` / `protocol-mysql`; SS 5.5.3 frontend may also need `parser-sql-engine-mysql` for **client SQL**). **Storage = XuGu NONE** via `proxy-backend-xugu` + `parser-sql-engine-xugu` — **not** `proxy-backend-mysql` / `proxy-dialect-mysql` | [proxy-quick-start.md](proxy-quick-start.md) · embedded IT `-Pproxy` (`MySQLProxyShardingCrudIT`); **do not claim unverified production SLA** beyond evidenced CRUD |
 
 ---
 
@@ -54,7 +55,7 @@ Do **not** enable, document as supported, or invent no-op SPIs for these items.
 
 | Item | Classification | Reason |
 |---|---|---|
-| **OSS trunk MySQL Proxy path** | NOT supported | Do **not** use `proxy-backend-mysql` / MySQL-trunk parser as storage; XuGu dialect aggregate only ([proxy-quick-start.md](proxy-quick-start.md)) |
+| **OSS trunk MySQL Proxy storage path** | NOT supported | Do **not** use `proxy-backend-mysql` / `proxy-dialect-mysql` as **storage**; XuGu backend + XuGu storage parser only. (MySQL **frontend** parser on the wire side is a separate concern — see [proxy-quick-start.md](proxy-quick-start.md)) |
 | **MySQL / Oracle / PostgreSQL compatible modes** | NOT supported | Only `compatiblemode=NONE`; no MySQL-trunk fallback or other-mode dialect branch |
 | **`DialectDatabasePrivilegeChecker`** | DEFER | XuGu privilege model not mapped to SS checker API; inventing a no-op checker is forbidden ([parity-matrix.md](parity-matrix.md)) |
 | **`DialectShardingDALResultMerger` (SHOW DAL)** | DEFER | NONE mode has no MySQL-style SHOW DAL product surface |

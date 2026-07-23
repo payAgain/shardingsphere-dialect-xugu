@@ -13,7 +13,8 @@
     <name>shardingsphere-proxy-dialect-xugu</name>
     <description>
         Aggregate XuGu Proxy dialect: MySQL wire frontend + XuGu storage stack (NONE).
-        Does not pull shardingsphere-parser-sql-engine-mysql for storage parsing.
+        Excludes proxy-backend-mysql so storage stays XuGu. Frontend may still transitively
+        bring parser-sql-engine-mysql for client/wire SQL on SS 5.5.3 — that is not storage parsing.
     </description>
     <dependencies>
         <!-- XuGu JDBC dialect stack (parser-sql-engine-xugu, binder/route/rewrite-xugu, …) -->
@@ -49,7 +50,7 @@
             <version>${shardingsphere.version}</version>
             <scope>runtime</scope>
             <exclusions>
-                <!-- Wire-only: drop MySQL storage backend + parser-sql-engine-mysql -->
+                <!-- Wire-only: drop MySQL storage backend (keep frontend MySQL parse tree as needed) -->
                 <exclusion>
                     <groupId>org.apache.shardingsphere</groupId>
                     <artifactId>shardingsphere-proxy-backend-mysql</artifactId>
